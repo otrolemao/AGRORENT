@@ -1,24 +1,20 @@
 const express = require('express');
-const cors = require('cors');
-require('dotenv').config();
-
-const db = require('./config/db');
-const authRoutes = require('./routes/authRoutes'); // <-- Nueva línea
-
 const app = express();
 
-app.use(cors());
+// Importar rutas existentes y nuevas
+const authRoutes = require('./routes/authRoutes');
+const maquinariaRoutes = require('./routes/maquinariaRoutes');
+const reservaRoutes = require('./routes/reservaRoutes');
+
+// Middlewares
 app.use(express.json());
 
-// Rutas
-app.use('/api/auth', authRoutes); // <-- Nueva ruta base
-
-app.get('/', (req, res) => {
-    res.send('¡API de AgroRent funcionando correctamente! 🚜');
-});
+// Usar rutas
+app.use('/api/auth', authRoutes);
+app.use('/api/maquinaria', maquinariaRoutes); 
+app.use('/api/reservas', reservaRoutes);      
 
 const PORT = process.env.PORT || 3000;
-
 app.listen(PORT, () => {
-    console.log(`Servidor corriendo en el puerto ${PORT}`);
+    console.log(`Servidor de AgroRent corriendo en el puerto ${PORT}`);
 });
