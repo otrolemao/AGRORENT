@@ -2,8 +2,7 @@ const express = require('express');
 const router = express.Router();
 const reservaController = require('../controllers/reservaController');
 
-router.post('/crear', reservaController.solicitarReserva);
-router.put('/:id/estado', reservaController.actualizarEstadoReserva);
-router.get('/', reservaController.listarReservas);
+router.post('/', reservaController.crearReserva);
+router.get('/', reservaController.verReservas);
 
 module.exports = router;

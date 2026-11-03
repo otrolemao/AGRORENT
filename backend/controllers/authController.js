@@ -1,7 +1,7 @@
 const db = require('../config/db');
 const bcrypt = require('bcryptjs');
 
-const registrarUsuario = async (req, res) => {
+exports.registrarUsuario = async (req, res) => {
     try {
         const { nombre, email, password, telefono, rol } = req.body;
 
@@ -33,7 +33,7 @@ const registrarUsuario = async (req, res) => {
     }
 };
 
-const loginUsuario = async (req, res) => {
+exports.loginUsuario = async (req, res) => {
     try {
         const { email, password } = req.body;
 
@@ -47,8 +47,8 @@ const loginUsuario = async (req, res) => {
         }
 
         const usuario = usuarios[0];
-
         const passwordCorrecta = await bcrypt.compare(password, usuario.password);
+        
         if (!passwordCorrecta) {
             return res.status(401).json({ error: 'Credenciales inválidas' });
         }
@@ -68,5 +68,3 @@ const loginUsuario = async (req, res) => {
         res.status(500).json({ error: 'Error en el servidor al iniciar sesión' });
     }
 };
-
-module.exports = { registrarUsuario, loginUsuario };
