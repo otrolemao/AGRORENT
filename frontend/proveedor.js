@@ -1,66 +1,130 @@
-window.onload = cargarReservas;
+document.addEventListener('DOMContentLoaded', () => {
+    cargarMaquinaria();
 
-async function cargarReservas() {
-    const tabla = document.getElementById('tablaReservas');
-    tabla.innerHTML = '<tr><td colspan="6">Cargando reservas...</td></tr>';
-
-    try {
-        const res = await fetch('http://localhost:3000/api/reservas');
-        const data = await res.json();
-        
-        tabla.innerHTML = '';
-        if (data.length === 0) {
-            tabla.innerHTML = '<tr><td colspan="6">No hay reservas registradas.</td></tr>';
-            return;
-        }
-
-        data.forEach(reserva => {
-            const fInicio = new Date(reserva.fecha_inicio).toLocaleDateString('es-CL');
-            const fFin = new Date(reserva.fecha_fin).toLocaleDateString('es-CL');
+    const form = document.getElementById('formMaquinaria');
+    if (form) {
+        form.addEventListener('submit', async (e) => {
+            e.preventDefault();
             
-            let botones = '';
-            if (reserva.estado === 'pendiente') {
-                botones = `
-                    <button class="btn-aceptar" onclick="actualizarEstado(${reserva.id_Reserva}, 'confirmada')">Aceptar</button>
-                    <button class="btn-rechazar" onclick="actualizarEstado(${reserva.id_Reserva}, 'rechazada')">Rechazar</button>
-                `;
-            } else {
-                botones = `<span style="color: gray;">Procesada</span>`;
-            }
+            const nuevaMaquina = {
+                id_proveedor: 1, 
+                id_categoria: 1, 
+                marca: document.getElementById('marca').value,
+                modelo: document.getElementById('modelo').value,
+                precio_dia: Number(document.getElementById('precio_dia').value),
+                descripcion: document.getElementById('descripcion').value,
+                anio: 2023, 
+                patente: "PAT-" + Math.floor(Math.random() * 10000)
+            };
 
-            tabla.innerHTML += `
-                <tr>
-                    <td>#${reserva.id_Reserva}</td>
-                    <td>${reserva.id_maquinaria}</td>
-                    <td>${fInicio} al ${fFin}</td>
-                    <td>$${reserva.monto_total}</td>
-                    <td><b>${reserva.estado.toUpperCase()}</b></td>
-                    <td>${botones}</td>
-                </tr>
+            try {
+                const respuesta = await fetch('/api/maquinaria', {
+                    method: 'POST',
+                    headers: { 'Content-Type': 'application/json' },
+                    body: JSON.stringify(nuevaMaquina)
+                });
+
+                if (respuesta.ok) {
+                    mostrarToast('¡Máquina registrada con éxito!', 'success');
+                    form.reset(); 
+                    cargarMaquinaria(); 
+                } else {
+                    mostrarToast('Error al registrar la máquina', 'error');
+                }
+            } catch (error) {
+                console.error('Error:', error);
+            }
+        });
+    }
+});
+
+async function cargarMaquinaria() {
+    try {
+        const respuesta = await fetch('/api/maquinaria/buscar');
+        const maquinas = await respuesta.json();
+        
+        const tbody = document.querySelector('#tablaMaquinaria tbody');
+        if (!tbody) return;
+
+        tbody.innerHTML = ''; 
+
+        maquinas.forEach(maquina => {
+            const fila = document.createElement('tr');
+            fila.innerHTML = `
+                <td>${maquina.id_maquinaria}</td>
+                <td>${maquina.marca}</td>
+                <td>${maquina.modelo}</td>
+                <td>$${maquina.precio_dia}</td>
+                <td>${maquina.estado}</td>
+                <td>
+                    <button class="btn btn-danger" onclick="eliminarMaquina(${maquina.id_maquinaria})">Eliminar</button>
+                </td>
             `;
+            tbody.appendChild(fila);
         });
     } catch (error) {
-        tabla.innerHTML = '<tr><td colspan="6">Error al cargar datos del servidor. Verifica que el backend esté encendido.</td></tr>';
+        console.error('Error al cargar la maquinaria:', error);
     }
 }
 
-async function actualizarEstado(id, nuevoEstado) {
-    if(!confirm(`¿Marcar esta reserva como ${nuevoEstado}?`)) return;
+window.eliminarMaquina = async (id) => {
+    const modalHTML = `
+        <div class="modal-overlay" id="modalEliminar">
+            <div class="modal-content">
+                <h3>Confirmar Eliminación</h3>
+                <p>¿Estás seguro de que deseas eliminar esta máquina?</p>
+                <div class="modal-buttons">
+                    <button class="btn-secondary" onclick="cerrarModal()">Cancelar</button>
+                    <button class="btn btn-danger" id="btnConfirmarEliminar">Sí, eliminar</button>
+                </div>
+            </div>
+        </div>
+    `;
 
-    try {
-        const res = await fetch(`http://localhost:3000/api/reservas/${id}/estado`, {
-            method: 'PUT',
-            headers: { 'Content-Type': 'application/json' },
-            body: JSON.stringify({ nuevo_estado: nuevoEstado })
-        });
-        
-        if(res.ok) {
-            alert(`Reserva ${nuevoEstado} exitosamente.`);
-            cargarReservas(); 
-        } else {
-            alert('Error al actualizar el estado.');
+    document.body.insertAdjacentHTML('beforeend', modalHTML);
+    const modal = document.getElementById('modalEliminar');
+    
+    setTimeout(() => modal.classList.add('show'), 10);
+
+    document.getElementById('btnConfirmarEliminar').onclick = async () => {
+        try {
+            const respuesta = await fetch(`/api/maquinaria/${id}`, {
+                method: 'DELETE'
+            });
+            if (respuesta.ok) {
+                mostrarToast('Máquina eliminada del sistema', 'success');
+                cargarMaquinaria();
+            } else {
+                mostrarToast('Error al eliminar', 'error');
+            }
+        } catch (error) {
+            console.error('Error al eliminar:', error);
         }
-    } catch (error) {
-        alert('Error de conexión con el servidor.');
+        cerrarModal();
+    };
+};
+
+window.cerrarModal = () => {
+    const modal = document.getElementById('modalEliminar');
+    if (modal) {
+        modal.classList.remove('show');
+        setTimeout(() => modal.remove(), 300);
     }
+};
+
+function mostrarToast(mensaje, tipo) {
+    const toast = document.createElement('div');
+    toast.className = `toast ${tipo}`;
+    toast.innerText = mensaje;
+    
+    document.body.appendChild(toast);
+    
+    setTimeout(() => {
+        toast.classList.add('show');
+    }, 10);
+
+    setTimeout(() => {
+        toast.classList.remove('show');
+        setTimeout(() => toast.remove(), 300);
+    }, 3000);
 }
