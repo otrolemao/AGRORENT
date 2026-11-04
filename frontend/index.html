@@ -68,6 +68,18 @@
     </div>
 
     <script>
+        // Si ya hay una sesión activa, ir directo a su panel.
+        (function redirigirSiHaySesion() {
+            try {
+                const guardado = localStorage.getItem('agrorent_usuario');
+                if (!guardado) return;
+                const u = JSON.parse(guardado);
+                if (u.rol === 3) window.location.href = 'panel-admin.html';
+                else if (u.rol === 2) window.location.href = 'panel-proveedor.html';
+                else if (u.rol === 1) window.location.href = 'panel-cliente.html';
+            } catch (e) { /* sesión corrupta: se ignora */ }
+        })();
+
         document.getElementById('loginForm').addEventListener('submit', async (e) => {
             e.preventDefault();
             const email = document.getElementById('email').value;
@@ -83,17 +95,28 @@
                 const data = await respuesta.json();
 
                 if (respuesta.ok) {
-                    mostrarToast('¡Bienvenido ' + data.usuario.nombre + '!', 'success');
-                    
+                    // Guardar la sesión para que los paneles sepan quién es el usuario.
+                    const usuario = {
+                        id: data.usuario.id,
+                        nombre: data.usuario.nombre,
+                        email: data.usuario.email,
+                        rol: Number(data.usuario.rol),
+                        id_proveedor: data.usuario.id_proveedor,
+                        id_productor: data.usuario.id_productor
+                    };
+                    localStorage.setItem('agrorent_usuario', JSON.stringify(usuario));
+
+                    mostrarToast('¡Bienvenido ' + usuario.nombre + '!', 'success');
+
                     setTimeout(() => {
-                        if (data.usuario.rol === 3) {
+                        if (usuario.rol === 3) {
                             window.location.href = 'panel-admin.html';
-                        } else if (data.usuario.rol === 2) {
+                        } else if (usuario.rol === 2) {
                             window.location.href = 'panel-proveedor.html';
                         } else {
-                            window.location.href = 'panel-cliente.html'; // Redirige al nuevo panel
+                            window.location.href = 'panel-cliente.html';
                         }
-                    }, 1500);
+                    }, 1200);
 
                 } else {
                     mostrarToast(data.error || 'Credenciales incorrectas', 'error');

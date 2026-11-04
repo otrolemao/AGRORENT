@@ -21,8 +21,19 @@ app.use('/api/maquinaria', maquinariaRoutes);
 app.use('/api/reservas', reservaRoutes);
 app.use('/api/admin', adminRoutes);
 
+// 404 en formato JSON para rutas de API inexistentes.
+app.use('/api', (req, res) => {
+    res.status(404).json({ error: 'Ruta de API no encontrada' });
+});
+
 app.get('/', (req, res) => {
     res.sendFile(path.join(__dirname, '../frontend/index.html'));
+});
+
+// Manejador de errores centralizado.
+app.use((err, req, res, next) => {
+    console.error(err);
+    res.status(500).json({ error: 'Error interno del servidor' });
 });
 
 const PORT = process.env.PORT || 3000;

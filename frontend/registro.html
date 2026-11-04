@@ -72,6 +72,10 @@
                 <input type="text" id="telefono" required>
             </div>
             <div style="margin-bottom: 15px;">
+                <label>RUT:</label>
+                <input type="text" id="rut" placeholder="12.345.678-9" required pattern="[0-9]{1,2}\.?[0-9]{3}\.?[0-9]{3}-?[0-9kK]">
+            </div>
+            <div style="margin-bottom: 15px;">
                 <label>¿Cuál es tu rol?</label>
                 <select id="rol" required>
                     <option value="1">Productor Agrícola (Cliente)</option>
@@ -94,6 +98,7 @@
                 email: document.getElementById('email').value,
                 password: document.getElementById('password').value,
                 telefono: document.getElementById('telefono').value,
+                rut: document.getElementById('rut').value,
                 rol: Number(document.getElementById('rol').value)
             };
 

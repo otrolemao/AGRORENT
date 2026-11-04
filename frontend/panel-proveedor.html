@@ -5,30 +5,75 @@
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <title>Panel Proveedor - AgroRent</title>
     <link rel="stylesheet" href="styles.css">
+    <style>
+        .header-proveedor {
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            padding: 0 20px;
+            flex-wrap: wrap;
+            gap: 10px;
+        }
+        .header-proveedor .usuario {
+            margin-right: 15px;
+            font-weight: bold;
+        }
+        .btn-logout {
+            background-color: #e74c3c;
+            color: white;
+            text-decoration: none;
+            padding: 8px 15px;
+            border-radius: 5px;
+            font-weight: bold;
+            transition: background-color 0.3s;
+        }
+        .btn-logout:hover { background-color: #c0392b; }
+    </style>
 </head>
 <body>
 
-    <header>
+    <header class="header-proveedor">
         <h1>AgroRent - Panel de Proveedor</h1>
+        <div>
+            <span class="usuario" id="nombreUsuario"></span>
+            <a href="#" id="btnSalir" class="btn-logout">Cerrar Sesión</a>
+        </div>
     </header>
 
     <div class="container">
         <h2>Registrar Nueva Maquinaria</h2>
-        
+
         <form id="formMaquinaria">
             <div style="margin-bottom: 15px;">
                 <label for="marca">Marca:</label><br>
-                <input type="text" id="marca" required style="width: 100%; padding: 8px;">
+                <input type="text" id="marca" required style="width: 100%; padding: 8px;" maxlength="50">
             </div>
-            
+
             <div style="margin-bottom: 15px;">
                 <label for="modelo">Modelo:</label><br>
-                <input type="text" id="modelo" required style="width: 100%; padding: 8px;">
+                <input type="text" id="modelo" required style="width: 100%; padding: 8px;" maxlength="50">
             </div>
-            
+
             <div style="margin-bottom: 15px;">
-                <label for="precio_dia">Precio por Día:</label><br>
-                <input type="number" id="precio_dia" required style="width: 100%; padding: 8px;">
+                <label for="categoria">Categoría:</label><br>
+                <select id="categoria" required style="width: 100%; padding: 8px;">
+                    <option value="">Cargando categorías...</option>
+                </select>
+            </div>
+
+            <div style="margin-bottom: 15px;">
+                <label for="anio">Año:</label><br>
+                <input type="number" id="anio" min="1950" max="2100" required style="width: 100%; padding: 8px;">
+            </div>
+
+            <div style="margin-bottom: 15px;">
+                <label for="patente">Patente:</label><br>
+                <input type="text" id="patente" required style="width: 100%; padding: 8px;" maxlength="20">
+            </div>
+
+            <div style="margin-bottom: 15px;">
+                <label for="precio_dia">Precio por día (CLP):</label><br>
+                <input type="number" id="precio_dia" min="1" required style="width: 100%; padding: 8px;">
             </div>
 
             <div style="margin-bottom: 15px;">
@@ -48,6 +93,7 @@
                     <th>ID</th>
                     <th>Marca</th>
                     <th>Modelo</th>
+                    <th>Categoría</th>
                     <th>Precio/Día</th>
                     <th>Estado</th>
                     <th>Acciones</th>

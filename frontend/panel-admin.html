@@ -11,7 +11,10 @@
             justify-content: space-between;
             align-items: center;
             padding: 0 20px;
+            flex-wrap: wrap;
+            gap: 10px;
         }
+        .header-admin .usuario { margin-right: 15px; font-weight: bold; }
         .btn-logout {
             background-color: #e74c3c;
             color: white;
@@ -21,49 +24,87 @@
             font-weight: bold;
             transition: background-color 0.3s;
         }
-        .btn-logout:hover {
-            background-color: #c0392b;
+        .btn-logout:hover { background-color: #c0392b; }
+        .metricas { display: flex; gap: 20px; margin-top: 20px; flex-wrap: wrap; }
+        .metrica {
+            flex: 1;
+            min-width: 180px;
+            background: #ecf0f1;
+            padding: 20px;
+            border-radius: 8px;
+            text-align: center;
         }
+        .metrica p { font-size: 24px; font-weight: bold; color: #2c3e50; margin: 8px 0 0; }
     </style>
 </head>
 <body>
     <header class="header-admin">
         <h1>AgroRent - Panel de Administración</h1>
-        <a href="index.html" class="btn-logout">Cerrar Sesión</a>
+        <div>
+            <span class="usuario" id="nombreUsuario"></span>
+            <a href="#" id="btnSalir" class="btn-logout">Cerrar Sesión</a>
+        </div>
     </header>
 
     <div class="container">
         <h2>Métricas del Sistema</h2>
-        
-        <div style="display: flex; gap: 20px; margin-top: 20px;">
-            <div style="flex: 1; background: #ecf0f1; padding: 20px; border-radius: 8px; text-align: center;">
+
+        <div class="metricas">
+            <div class="metrica">
                 <h3>Usuarios Registrados</h3>
-                <p id="totalUsuarios" style="font-size: 24px; font-weight: bold; color: #2c3e50;">-</p>
+                <p id="totalUsuarios">-</p>
             </div>
-            <div style="flex: 1; background: #ecf0f1; padding: 20px; border-radius: 8px; text-align: center;">
+            <div class="metrica">
                 <h3>Maquinaria Registrada</h3>
-                <p id="totalMaquinas" style="font-size: 24px; font-weight: bold; color: #2c3e50;">-</p>
+                <p id="totalMaquinas">-</p>
             </div>
-            <div style="flex: 1; background: #ecf0f1; padding: 20px; border-radius: 8px; text-align: center;">
-                <h3>Reservas Activas</h3>
-                <p id="totalReservas" style="font-size: 24px; font-weight: bold; color: #2c3e50;">-</p>
+            <div class="metrica">
+                <h3>Reservas Confirmadas</h3>
+                <p id="totalReservas">-</p>
+            </div>
+            <div class="metrica">
+                <h3>Ingresos Confirmados</h3>
+                <p id="totalIngresos">-</p>
             </div>
         </div>
     </div>
 
     <script>
-        document.addEventListener('DOMContentLoaded', async () => {
+        const usuario = (() => {
+            try { return JSON.parse(localStorage.getItem('agrorent_usuario')); }
+            catch (e) { return null; }
+        })();
+
+        if (!usuario || usuario.rol !== 3) {
+            window.location.href = 'index.html';
+        } else {
+            document.getElementById('nombreUsuario').textContent = usuario.nombre;
+            document.getElementById('btnSalir').addEventListener('click', (e) => {
+                e.preventDefault();
+                localStorage.removeItem('agrorent_usuario');
+                window.location.href = 'index.html';
+            });
+
+            document.addEventListener('DOMContentLoaded', cargarMetricas);
+            if (document.readyState !== 'loading') cargarMetricas();
+        }
+
+        async function cargarMetricas() {
             try {
                 const respuesta = await fetch('/api/admin/metricas');
+                if (!respuesta.ok) throw new Error('Respuesta ' + respuesta.status);
+
                 const data = await respuesta.json();
 
                 document.getElementById('totalUsuarios').innerText = data.usuarios_registrados;
                 document.getElementById('totalMaquinas').innerText = data.maquinaria_registrada;
                 document.getElementById('totalReservas').innerText = data.reservas_activas;
+                document.getElementById('totalIngresos').innerText =
+                    '$' + Number(data.ingresos_estimados).toLocaleString('es-CL');
             } catch (error) {
                 console.error('Error al cargar métricas', error);
             }
-        });
+        }
     </script>
 </body>
 </html>

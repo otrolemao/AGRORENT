@@ -218,11 +218,13 @@ CREATE TABLE sesion (
 -- ============================================
 
 -- Usuarios (contraseñas en texto plano solo para pruebas)
+-- Contraseña de todos los usuarios de prueba: agrorent123
+-- (hashes bcrypt reales; el login usa bcrypt.compare, no texto plano)
 INSERT INTO usuario (nombre, email, password, telefono, id_rol) VALUES
-('Jorge Muñoz', 'jorge@agroma.cl', 'hash123', '+56912345678', 2),
-('María González', 'maria@productor.cl', 'hash456', '+56923456789', 1),
-('Pedro Silva', 'pedro@productor.cl', 'hash789', '+56934567890', 1),
-('Admin AgroRent', 'admin@agrorent.cl', 'hash000', '+56945678901', 3);
+('Jorge Muñoz', 'jorge@agroma.cl', '\\.go3.h9ra2Ox7lZr9aLWJotvarCnsqFq', '+56912345678', 2),
+('María González', 'maria@productor.cl', '\\.d9cJ4taqLoowa.X.Na', '+56923456789', 1),
+('Pedro Silva', 'pedro@productor.cl', '\\.IzP0CyGY8I.nI57o0mCl4079qDOMeG', '+56934567890', 1),
+('Admin AgroRent', 'admin@agrorent.cl', '\\/VltkS/jPC27OipNSZe5YGQRZRFUUMMmUMLBkOtYrKy37XN5oy', '+56945678901', 3);
 
 -- Productores
 INSERT INTO productor (id_usuario, rut, direccion, tipo_cultivo) VALUES
