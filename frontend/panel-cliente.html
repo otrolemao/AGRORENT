@@ -1,0 +1,76 @@
+<!DOCTYPE html>
+<html lang="es">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>AgroRent - Catálogo de Maquinaria</title>
+    <link rel="stylesheet" href="styles.css">
+    <style>
+        .header-cliente {
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            padding: 0 20px;
+        }
+        .btn-logout {
+            background-color: #e74c3c;
+            color: white;
+            text-decoration: none;
+            padding: 8px 15px;
+            border-radius: 5px;
+            font-weight: bold;
+            transition: background-color 0.3s;
+        }
+        .btn-logout:hover {
+            background-color: #c0392b;
+        }
+    </style>
+</head>
+<body>
+    <header class="header-cliente">
+        <h1>AgroRent - Catálogo de Maquinaria</h1>
+        <a href="index.html" class="btn-logout">Cerrar Sesión</a>
+    </header>
+
+    <div class="container">
+        <h2>Máquinas Disponibles para Arriendo</h2>
+        <table id="tablaMaquinaria">
+            <thead>
+                <tr>
+                    <th>Marca</th>
+                    <th>Modelo</th>
+                    <th>Precio/Día</th>
+                    <th>Descripción</th>
+                </tr>
+            </thead>
+            <tbody>
+                <!-- Aquí se cargarán las máquinas -->
+            </tbody>
+        </table>
+    </div>
+
+    <script>
+        document.addEventListener('DOMContentLoaded', async () => {
+            try {
+                const respuesta = await fetch('/api/maquinaria/buscar');
+                const maquinas = await respuesta.json();
+                
+                const tbody = document.querySelector('#tablaMaquinaria tbody');
+
+                maquinas.forEach(maquina => {
+                    const fila = document.createElement('tr');
+                    fila.innerHTML = `
+                        <td>${maquina.marca}</td>
+                        <td>${maquina.modelo}</td>
+                        <td>$${maquina.precio_dia}</td>
+                        <td>${maquina.descripcion}</td>
+                    `;
+                    tbody.appendChild(fila);
+                });
+            } catch (error) {
+                console.error('Error al cargar la maquinaria:', error);
+            }
+        });
+    </script>
+</body>
+</html>

@@ -22,7 +22,7 @@ app.use('/api/reservas', reservaRoutes);
 app.use('/api/admin', adminRoutes);
 
 app.get('/', (req, res) => {
-    res.sendFile(path.join(__dirname, '../frontend/panel-proveedor.html'));
+    res.sendFile(path.join(__dirname, '../frontend/index.html'));
 });
 
 const PORT = process.env.PORT || 3000;
