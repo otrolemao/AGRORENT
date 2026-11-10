@@ -11,12 +11,6 @@
             justify-content: space-between;
             align-items: center;
             padding: 0 20px;
-            flex-wrap: wrap;
-            gap: 10px;
-        }
-        .header-proveedor .usuario {
-            margin-right: 15px;
-            font-weight: bold;
         }
         .btn-logout {
             background-color: #e74c3c;
@@ -28,30 +22,32 @@
             transition: background-color 0.3s;
         }
         .btn-logout:hover { background-color: #c0392b; }
+        .btn-aceptar { background-color: #27ae60; color: white; border: none; padding: 6px 10px; border-radius: 4px; cursor: pointer; margin-right: 5px; }
+        .btn-rechazar { background-color: #e74c3c; color: white; border: none; padding: 6px 10px; border-radius: 4px; cursor: pointer; }
     </style>
 </head>
 <body>
 
     <header class="header-proveedor">
         <h1>AgroRent - Panel de Proveedor</h1>
-        <div>
-            <span class="usuario" id="nombreUsuario"></span>
-            <a href="#" id="btnSalir" class="btn-logout">Cerrar Sesión</a>
+        <div style="display: flex; align-items: center; gap: 15px;">
+            <span id="nombreUsuario" style="font-weight: bold; color: white;"></span>
+            <a href="#" class="btn-logout" onclick="cerrarSesion(event)">Cerrar Sesión</a>
         </div>
     </header>
 
     <div class="container">
         <h2>Registrar Nueva Maquinaria</h2>
-
+        
         <form id="formMaquinaria">
             <div style="margin-bottom: 15px;">
                 <label for="marca">Marca:</label><br>
-                <input type="text" id="marca" required style="width: 100%; padding: 8px;" maxlength="50">
+                <input type="text" id="marca" required style="width: 100%; padding: 8px;">
             </div>
-
+            
             <div style="margin-bottom: 15px;">
                 <label for="modelo">Modelo:</label><br>
-                <input type="text" id="modelo" required style="width: 100%; padding: 8px;" maxlength="50">
+                <input type="text" id="modelo" required style="width: 100%; padding: 8px;">
             </div>
 
             <div style="margin-bottom: 15px;">
@@ -63,17 +59,20 @@
 
             <div style="margin-bottom: 15px;">
                 <label for="anio">Año:</label><br>
-                <input type="number" id="anio" min="1950" max="2100" required style="width: 100%; padding: 8px;">
+                <input type="number" id="anio" required style="width: 100%; padding: 8px;">
             </div>
 
             <div style="margin-bottom: 15px;">
                 <label for="patente">Patente:</label><br>
-                <input type="text" id="patente" required style="width: 100%; padding: 8px;" maxlength="20">
+                <input type="text" id="patente" required 
+                       pattern="[A-Za-z]{4}-[0-9]{2,3}" 
+                       title="Formato válido: ABCD-12"
+                       style="width: 100%; padding: 8px;">
             </div>
-
+            
             <div style="margin-bottom: 15px;">
-                <label for="precio_dia">Precio por día (CLP):</label><br>
-                <input type="number" id="precio_dia" min="1" required style="width: 100%; padding: 8px;">
+                <label for="precio_dia">Precio por Día:</label><br>
+                <input type="number" id="precio_dia" required style="width: 100%; padding: 8px;">
             </div>
 
             <div style="margin-bottom: 15px;">
@@ -93,18 +92,46 @@
                     <th>ID</th>
                     <th>Marca</th>
                     <th>Modelo</th>
-                    <th>Categoría</th>
                     <th>Precio/Día</th>
                     <th>Estado</th>
                     <th>Acciones</th>
                 </tr>
             </thead>
             <tbody>
-                <!-- Aquí se cargarán las máquinas con JavaScript -->
+            </tbody>
+        </table>
+
+        <hr style="margin: 30px 0;">
+
+        <h2>Reservas Recibidas</h2>
+        <table id="tablaReservas">
+            <thead>
+                <tr>
+                    <th>ID Reserva</th>
+                    <th>Máquina</th>
+                    <th>Fechas</th>
+                    <th>Costo Est.</th>
+                    <th>Estado</th>
+                    <th>Acciones</th>
+                </tr>
+            </thead>
+            <tbody>
             </tbody>
         </table>
     </div>
 
+    <script>
+        const usuarioGuardado = JSON.parse(localStorage.getItem('agrorent_usuario'));
+        if (usuarioGuardado && usuarioGuardado.nombre) {
+            document.getElementById('nombreUsuario').innerText = usuarioGuardado.nombre;
+        }
+
+        function cerrarSesion(e) {
+            e.preventDefault();
+            localStorage.removeItem('agrorent_usuario');
+            window.location.href = 'index.html';
+        }
+    </script>
     <script src="proveedor.js"></script>
 </body>
 </html>

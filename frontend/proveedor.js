@@ -1,167 +1,217 @@
 document.addEventListener('DOMContentLoaded', () => {
-    // --- Sesión ---
-    const usuario = obtenerUsuario();
-    if (!usuario || usuario.rol !== 2) {
-        window.location.href = 'index.html';
-        return;
-    }
-    if (!usuario.id_proveedor) {
-        alert('Tu cuenta no tiene un perfil de proveedor asociado. Vuelve a registrarte o contacta al administrador.');
+    const usuarioGuardado = localStorage.getItem('agrorent_usuario');
+    if (!usuarioGuardado) {
         window.location.href = 'index.html';
         return;
     }
 
-    document.getElementById('nombreUsuario').textContent = usuario.nombre;
-    document.getElementById('btnSalir').addEventListener('click', (e) => {
-        e.preventDefault();
-        localStorage.removeItem('agrorent_usuario');
-        window.location.href = 'index.html';
-    });
-
-    cargarCategorias();
     cargarMaquinaria();
+    cargarCategorias();
+    cargarReservas();
 
     const form = document.getElementById('formMaquinaria');
-    form.addEventListener('submit', async (e) => {
-        e.preventDefault();
+    if (form) {
+        form.addEventListener('submit', async (e) => {
+            e.preventDefault();
+            
+            const patenteIngresada = document.getElementById('patente').value;
+            const regexPatente = /^[A-Za-z]{4}-[0-9]{2,3}$/;
 
-        const nuevaMaquina = {
-            id_proveedor: usuario.id_proveedor,
-            id_categoria: Number(document.getElementById('categoria').value),
-            marca: document.getElementById('marca').value.trim(),
-            modelo: document.getElementById('modelo').value.trim(),
-            anio: Number(document.getElementById('anio').value),
-            patente: document.getElementById('patente').value.trim(),
-            precio_dia: Number(document.getElementById('precio_dia').value),
-            descripcion: document.getElementById('descripcion').value.trim()
-        };
-
-        if (!nuevaMaquina.id_categoria) {
-            mostrarToast('Selecciona una categoría', 'error');
-            return;
-        }
-
-        try {
-            const respuesta = await fetch('/api/maquinaria', {
-                method: 'POST',
-                headers: { 'Content-Type': 'application/json' },
-                body: JSON.stringify(nuevaMaquina)
-            });
-
-            const data = await respuesta.json().catch(() => ({}));
-
-            if (respuesta.ok) {
-                mostrarToast('¡Máquina registrada con éxito!', 'success');
-                form.reset();
-                cargarMaquinaria();
-            } else {
-                mostrarToast(data.error || 'Error al registrar la máquina', 'error');
+            if (!regexPatente.test(patenteIngresada)) {
+                mostrarToast('Formato de patente inválido. Usa el formato ABCD-12', 'error');
+                return;
             }
-        } catch (error) {
-            console.error('Error:', error);
-            mostrarToast('Error de conexión con el servidor', 'error');
-        }
-    });
+            
+            const nuevaMaquina = {
+                id_proveedor: 1,
+                id_categoria: Number(document.getElementById('categoria').value),
+                marca: document.getElementById('marca').value,
+                modelo: document.getElementById('modelo').value,
+                anio: Number(document.getElementById('anio').value),
+                patente: patenteIngresada,
+                precio_dia: Number(document.getElementById('precio_dia').value),
+                descripcion: document.getElementById('descripcion').value
+            };
+
+            try {
+                const respuesta = await fetch('/api/maquinaria', {
+                    method: 'POST',
+                    headers: { 'Content-Type': 'application/json' },
+                    body: JSON.stringify(nuevaMaquina)
+                });
+
+                if (respuesta.ok) {
+                    mostrarToast('Máquina registrada con éxito', 'success');
+                    form.reset(); 
+                    cargarMaquinaria(); 
+                } else {
+                    mostrarToast('Error al registrar la máquina', 'error');
+                }
+            } catch (error) {
+                console.error('Error:', error);
+            }
+        });
+    }
 });
 
-function obtenerUsuario() {
+async function cargarMaquinaria() {
     try {
-        return JSON.parse(localStorage.getItem('agrorent_usuario'));
-    } catch (e) {
-        return null;
+        const respuesta = await fetch('/api/maquinaria/buscar');
+        const maquinas = await respuesta.json();
+        
+        const tbody = document.querySelector('#tablaMaquinaria tbody');
+        if (!tbody) return;
+
+        tbody.innerHTML = ''; 
+
+        maquinas.forEach(maquina => {
+            const fila = document.createElement('tr');
+            fila.innerHTML = `
+                <td>${maquina.id_maquinaria}</td>
+                <td>${maquina.marca}</td>
+                <td>${maquina.modelo}</td>
+                <td>$${maquina.precio_dia}</td>
+                <td>${maquina.estado}</td>
+                <td>
+                    <button class="btn btn-danger" onclick="eliminarMaquina(${maquina.id_maquinaria})">Eliminar</button>
+                </td>
+            `;
+            tbody.appendChild(fila);
+        });
+    } catch (error) {
+        console.error('Error al cargar la maquinaria:', error);
     }
 }
-
-let categoriasPorId = {};
 
 async function cargarCategorias() {
     try {
         const respuesta = await fetch('/api/maquinaria/categorias');
         const categorias = await respuesta.json();
+        
         const select = document.getElementById('categoria');
+        if (!select) return;
 
-        select.innerHTML = '';
-        const vacio = document.createElement('option');
-        vacio.value = '';
-        vacio.textContent = 'Selecciona una categoría';
-        select.appendChild(vacio);
-
-        categorias.forEach((cat) => {
-            categoriasPorId[cat.id_categoria] = cat.nombre;
-            const opcion = document.createElement('option');
-            opcion.value = cat.id_categoria;
-            opcion.textContent = cat.nombre;
-            select.appendChild(opcion);
+        select.innerHTML = '<option value="">Seleccione una categoría</option>';
+        categorias.forEach(cat => {
+            select.innerHTML += `<option value="${cat.id_categoria}">${cat.nombre}</option>`;
         });
     } catch (error) {
-        console.error('Error al cargar categorías:', error);
+        const select = document.getElementById('categoria');
+        if (select) {
+            select.innerHTML = `
+                <option value="1">Tractor</option>
+                <option value="2">Sembradora</option>
+                <option value="3">Cosechadora</option>
+                <option value="4">Rastra</option>
+                <option value="5">Pulverizadora</option>
+            `;
+        }
     }
 }
 
-async function cargarMaquinaria() {
-    const usuario = obtenerUsuario();
-    if (!usuario || !usuario.id_proveedor) return;
-
+async function cargarReservas() {
     try {
-        const respuesta = await fetch(`/api/maquinaria/buscar?id_proveedor=${encodeURIComponent(usuario.id_proveedor)}`);
-        const maquinas = await respuesta.json();
-
-        const tbody = document.querySelector('#tablaMaquinaria tbody');
+        // Enviamos id_proveedor=1 para filtrar solo las reservas de este proveedor
+        const respuesta = await fetch('/api/reservas?id_proveedor=1');
+        const reservas = await respuesta.json();
+        
+        const tbody = document.querySelector('#tablaReservas tbody');
         if (!tbody) return;
 
-        tbody.innerHTML = '';
+        tbody.innerHTML = ''; 
 
-        if (maquinas.length === 0) {
-            const fila = document.createElement('tr');
-            const celda = document.createElement('td');
-            celda.colSpan = 7;
-            celda.textContent = 'Aún no has registrado maquinaria.';
-            celda.style.textAlign = 'center';
-            fila.appendChild(celda);
-            tbody.appendChild(fila);
+        if (reservas.length === 0) {
+            tbody.innerHTML = '<tr><td colspan="6" style="text-align: center;">No hay reservas recibidas.</td></tr>';
             return;
         }
 
-        maquinas.forEach((maquina) => {
+        reservas.forEach(reserva => {
+            let colorEstado = 'black';
+            if (reserva.estado === 'Pendiente') colorEstado = '#f39c12';
+            if (reserva.estado === 'Confirmada') colorEstado = '#27ae60';
+            if (reserva.estado === 'Cancelada') colorEstado = '#e74c3c';
+
+            let botones = '-';
+            if (reserva.estado === 'Pendiente') {
+                botones = `
+                    <button class="btn-aceptar" onclick="cambiarEstadoReserva(${reserva.id_reserva}, 'Confirmada')">Aceptar</button>
+                    <button class="btn-rechazar" onclick="cambiarEstadoReserva(${reserva.id_reserva}, 'Cancelada')">Rechazar</button>
+                `;
+            }
+
             const fila = document.createElement('tr');
-
-            const celdas = [
-                maquina.id_maquinaria,
-                maquina.marca,
-                maquina.modelo,
-                categoriasPorId[maquina.id_categoria] || maquina.id_categoria,
-                '$' + Number(maquina.precio_dia).toLocaleString('es-CL'),
-                maquina.estado
-            ];
-
-            celdas.forEach((valor) => {
-                const td = document.createElement('td');
-                td.textContent = valor;
-                fila.appendChild(td);
-            });
-
-            const tdAccion = document.createElement('td');
-            const boton = document.createElement('button');
-            boton.className = 'btn btn-danger';
-            boton.textContent = 'Eliminar';
-            boton.addEventListener('click', () => eliminarMaquina(maquina.id_maquinaria));
-            tdAccion.appendChild(boton);
-            fila.appendChild(tdAccion);
-
+            fila.innerHTML = `
+                <td>${reserva.id_reserva}</td>
+                <td>${reserva.marca} ${reserva.modelo}</td>
+                <td>${reserva.fecha_inicio.substring(0,10)} al ${reserva.fecha_fin.substring(0,10)}</td>
+                <td>$${reserva.costo_estimado}</td>
+                <td style="color: ${colorEstado}; font-weight: bold;">${reserva.estado}</td>
+                <td>${botones}</td>
+            `;
             tbody.appendChild(fila);
         });
     } catch (error) {
-        console.error('Error al cargar la maquinaria:', error);
-        mostrarToast('Error al cargar la maquinaria', 'error');
+        console.error('Error al cargar reservas:', error);
     }
 }
 
-function eliminarMaquina(id) {
+window.cambiarEstadoReserva = async (id, nuevoEstado) => {
+    const accion = nuevoEstado === 'Confirmada' ? 'Aceptar' : 'Rechazar';
+    
+    const modalHTML = `
+        <div class="modal-overlay" id="modalEstadoReserva">
+            <div class="modal-content">
+                <h3>Confirmar Acción</h3>
+                <p>¿Estás seguro de que deseas <strong>${accion.toLowerCase()}</strong> esta reserva?</p>
+                <div class="modal-buttons">
+                    <button class="btn-secondary" onclick="cerrarModalReserva()">Cancelar</button>
+                    <button class="btn ${nuevoEstado === 'Confirmada' ? '' : 'btn-danger'}" id="btnConfirmarEstado">Sí, ${accion}</button>
+                </div>
+            </div>
+        </div>
+    `;
+
+    document.body.insertAdjacentHTML('beforeend', modalHTML);
+    const modal = document.getElementById('modalEstadoReserva');
+    
+    setTimeout(() => modal.classList.add('show'), 10);
+
+    document.getElementById('btnConfirmarEstado').onclick = async () => {
+        try {
+            const respuesta = await fetch(`/api/reservas/${id}/estado`, {
+                method: 'PUT',
+                headers: { 'Content-Type': 'application/json' },
+                body: JSON.stringify({ estado: nuevoEstado })
+            });
+
+            if (respuesta.ok) {
+                mostrarToast(`Reserva ${nuevoEstado.toLowerCase()} correctamente`, 'success');
+                cargarReservas();
+                cargarMaquinaria();
+            } else {
+                mostrarToast('Error al actualizar la reserva', 'error');
+            }
+        } catch (error) {
+            console.error('Error al cambiar estado:', error);
+        }
+        cerrarModalReserva();
+    };
+};
+
+window.cerrarModalReserva = () => {
+    const modal = document.getElementById('modalEstadoReserva');
+    if (modal) {
+        modal.classList.remove('show');
+        setTimeout(() => modal.remove(), 300);
+    }
+};
+
+window.eliminarMaquina = async (id) => {
     const modalHTML = `
         <div class="modal-overlay" id="modalEliminar">
             <div class="modal-content">
                 <h3>Confirmar Eliminación</h3>
-                <p>¿Estás seguro de que deseas eliminar esta máquina?</p>
+                <p>¿Estás seguro de que deseas eliminar esta máquina? Esta acción no se puede deshacer.</p>
                 <div class="modal-buttons">
                     <button class="btn-secondary" onclick="cerrarModal()">Cancelar</button>
                     <button class="btn btn-danger" id="btnConfirmarEliminar">Sí, eliminar</button>
@@ -172,43 +222,42 @@ function eliminarMaquina(id) {
 
     document.body.insertAdjacentHTML('beforeend', modalHTML);
     const modal = document.getElementById('modalEliminar');
-
+    
     setTimeout(() => modal.classList.add('show'), 10);
 
     document.getElementById('btnConfirmarEliminar').onclick = async () => {
         try {
-            const respuesta = await fetch(`/api/maquinaria/${id}`, { method: 'DELETE' });
-            const data = await respuesta.json().catch(() => ({}));
-
+            const respuesta = await fetch(`/api/maquinaria/${id}`, {
+                method: 'DELETE'
+            });
             if (respuesta.ok) {
                 mostrarToast('Máquina eliminada del sistema', 'success');
                 cargarMaquinaria();
             } else {
-                mostrarToast(data.error || 'Error al eliminar', 'error');
+                mostrarToast('Error al eliminar', 'error');
             }
         } catch (error) {
             console.error('Error al eliminar:', error);
-            mostrarToast('Error de conexión con el servidor', 'error');
         }
         cerrarModal();
     };
-}
+};
 
-function cerrarModal() {
+window.cerrarModal = () => {
     const modal = document.getElementById('modalEliminar');
     if (modal) {
         modal.classList.remove('show');
         setTimeout(() => modal.remove(), 300);
     }
-}
+};
 
 function mostrarToast(mensaje, tipo) {
     const toast = document.createElement('div');
     toast.className = `toast ${tipo}`;
     toast.innerText = mensaje;
-
+    
     document.body.appendChild(toast);
-
+    
     setTimeout(() => {
         toast.classList.add('show');
     }, 10);

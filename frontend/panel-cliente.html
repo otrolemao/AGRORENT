@@ -11,10 +11,7 @@
             justify-content: space-between;
             align-items: center;
             padding: 0 20px;
-            flex-wrap: wrap;
-            gap: 10px;
         }
-        .header-cliente .usuario { margin-right: 15px; font-weight: bold; }
         .btn-logout {
             background-color: #e74c3c;
             color: white;
@@ -25,35 +22,51 @@
             transition: background-color 0.3s;
         }
         .btn-logout:hover { background-color: #c0392b; }
-        .buscador {
-            display: flex;
-            gap: 10px;
-            margin: 20px 0;
+        
+        .toast {
+            position: fixed; top: 20px; right: 20px; padding: 15px 25px;
+            border-radius: 8px; color: white; font-weight: bold;
+            box-shadow: 0 4px 12px rgba(0,0,0,0.15); z-index: 1000;
+            opacity: 0; transform: translateY(-20px); transition: opacity 0.3s, transform 0.3s;
         }
-        .buscador input {
-            flex: 1;
-            padding: 10px;
-            border: 1px solid #ccc;
-            border-radius: 4px;
+        .toast.show { opacity: 1; transform: translateY(0); }
+        .toast.success { background-color: #27ae60; }
+        .toast.error { background-color: #e74c3c; }
+        
+        .modal-overlay {
+            position: fixed; top: 0; left: 0; width: 100%; height: 100%;
+            background: rgba(0, 0, 0, 0.5); display: flex; justify-content: center; align-items: center;
+            z-index: 2000; opacity: 0; transition: opacity 0.3s;
         }
-        .sin-resultados { text-align: center; padding: 20px; color: #7f8c8d; }
+        .modal-overlay.show { opacity: 1; }
+        .modal-content {
+            background: white; padding: 30px; border-radius: 8px; max-width: 400px; width: 100%;
+            text-align: center; box-shadow: 0 4px 15px rgba(0,0,0,0.2); transform: scale(0.9); transition: transform 0.3s;
+        }
+        .modal-overlay.show .modal-content { transform: scale(1); }
+        .modal-content h3 { margin-top: 0; color: #2c3e50; }
+        .modal-buttons { margin-top: 25px; display: flex; justify-content: center; gap: 15px; }
+        .btn-secondary { background-color: #95a5a6; color: white; border: none; padding: 10px 20px; border-radius: 5px; cursor: pointer; }
+        .estado-pendiente { color: #f39c12; font-weight: bold; }
+        .estado-confirmada { color: #27ae60; font-weight: bold; }
+        .estado-cancelada { color: #e74c3c; font-weight: bold; }
     </style>
 </head>
 <body>
     <header class="header-cliente">
         <h1>AgroRent - Catálogo de Maquinaria</h1>
-        <div>
-            <span class="usuario" id="nombreUsuario"></span>
-            <a href="#" id="btnSalir" class="btn-logout">Cerrar Sesión</a>
+        <div style="display: flex; align-items: center; gap: 15px;">
+            <span id="nombreUsuario" style="font-weight: bold; color: white;"></span>
+            <a href="#" class="btn-logout" onclick="cerrarSesion(event)">Cerrar Sesión</a>
         </div>
     </header>
 
     <div class="container">
         <h2>Máquinas Disponibles para Arriendo</h2>
-
-        <div class="buscador">
-            <input type="text" id="busqueda" placeholder="Buscar por marca, modelo o descripción...">
-            <button class="btn" id="btnBuscar">Buscar</button>
+        
+        <div style="margin-bottom: 20px; display: flex; gap: 10px;">
+            <input type="text" id="inputBusqueda" placeholder="Buscar por marca, modelo o descripción..." style="flex: 1; padding: 10px; border: 1px solid #ccc; border-radius: 4px;">
+            <button class="btn" onclick="cargarMaquinaria()" style="background-color: #27ae60;">Buscar</button>
         </div>
 
         <table id="tablaMaquinaria">
@@ -67,115 +80,132 @@
                 </tr>
             </thead>
             <tbody>
-                <!-- Aquí se cargarán las máquinas -->
+            </tbody>
+        </table>
+
+        <hr style="margin: 30px 0;">
+
+        <h2>Mis Reservas</h2>
+        <table id="tablaMisReservas">
+            <thead>
+                <tr>
+                    <th>ID Reserva</th>
+                    <th>Máquina</th>
+                    <th>Fechas</th>
+                    <th>Costo</th>
+                    <th>Estado</th>
+                    <th>Acción</th>
+                </tr>
+            </thead>
+            <tbody>
             </tbody>
         </table>
     </div>
 
     <script>
-        const usuario = (() => {
-            try { return JSON.parse(localStorage.getItem('agrorent_usuario')); }
-            catch (e) { return null; }
-        })();
-
-        if (!usuario || usuario.rol !== 1) {
-            window.location.href = 'index.html';
-        } else {
-            document.getElementById('nombreUsuario').textContent = usuario.nombre;
-            document.getElementById('btnSalir').addEventListener('click', (e) => {
-                e.preventDefault();
-                localStorage.removeItem('agrorent_usuario');
-                window.location.href = 'index.html';
-            });
-
-            document.getElementById('btnBuscar').addEventListener('click', () => cargarMaquinaria());
-            document.getElementById('busqueda').addEventListener('keydown', (e) => {
-                if (e.key === 'Enter') cargarMaquinaria();
-            });
-
-            cargarMaquinaria();
+        const usuarioGuardado = JSON.parse(localStorage.getItem('agrorent_usuario'));
+        if (usuarioGuardado && usuarioGuardado.nombre) {
+            document.getElementById('nombreUsuario').innerText = usuarioGuardado.nombre;
         }
 
+        function cerrarSesion(e) {
+            e.preventDefault();
+            localStorage.removeItem('agrorent_usuario');
+            window.location.href = 'index.html';
+        }
+
+        document.addEventListener('DOMContentLoaded', () => {
+            cargarMaquinaria();
+            cargarMisReservas();
+            document.getElementById('inputBusqueda').addEventListener('keypress', function (e) {
+                if (e.key === 'Enter') cargarMaquinaria();
+            });
+        });
+
         async function cargarMaquinaria() {
-            const texto = document.getElementById('busqueda').value.trim();
-            const url = texto
-                ? '/api/maquinaria/buscar?busqueda=' + encodeURIComponent(texto)
-                : '/api/maquinaria/buscar';
-
-            const tbody = document.querySelector('#tablaMaquinaria tbody');
-
             try {
+                const busqueda = document.getElementById('inputBusqueda').value;
+                const url = busqueda ? `/api/maquinaria/buscar?busqueda=${busqueda}` : '/api/maquinaria/buscar';
+                
                 const respuesta = await fetch(url);
                 const maquinas = await respuesta.json();
+                
+                const tbody = document.querySelector('#tablaMaquinaria tbody');
+                tbody.innerHTML = ''; 
 
-                tbody.innerHTML = '';
-
-                if (maquinas.length === 0) {
+                maquinas.forEach(maquina => {
                     const fila = document.createElement('tr');
-                    const celda = document.createElement('td');
-                    celda.colSpan = 5;
-                    celda.className = 'sin-resultados';
-                    celda.textContent = 'No se encontró maquinaria disponible.';
-                    fila.appendChild(celda);
-                    tbody.appendChild(fila);
-                    return;
-                }
-
-                maquinas.forEach((maquina) => {
-                    const fila = document.createElement('tr');
-
-                    [maquina.marca, maquina.modelo].forEach((valor) => {
-                        const td = document.createElement('td');
-                        td.textContent = valor;
-                        fila.appendChild(td);
-                    });
-
-                    const tdPrecio = document.createElement('td');
-                    tdPrecio.textContent = '$' + Number(maquina.precio_dia).toLocaleString('es-CL');
-                    fila.appendChild(tdPrecio);
-
-                    const tdDesc = document.createElement('td');
-                    tdDesc.textContent = maquina.descripcion || '';
-                    fila.appendChild(tdDesc);
-
-                    const tdAccion = document.createElement('td');
-                    const boton = document.createElement('button');
-                    boton.className = 'btn';
-                    boton.textContent = 'Reservar';
-                    boton.addEventListener('click', () => abrirModalReserva(maquina));
-                    tdAccion.appendChild(boton);
-                    fila.appendChild(tdAccion);
-
+                    fila.innerHTML = `
+                        <td>${maquina.marca}</td>
+                        <td>${maquina.modelo}</td>
+                        <td>$${maquina.precio_dia}</td>
+                        <td>${maquina.descripcion}</td>
+                        <td>
+                            <button class="btn" onclick="abrirModalReserva(${maquina.id_maquinaria}, '${maquina.marca} ${maquina.modelo}')">Reservar</button>
+                        </td>
+                    `;
                     tbody.appendChild(fila);
                 });
             } catch (error) {
                 console.error('Error al cargar la maquinaria:', error);
-                mostrarToast('Error al cargar el catálogo', 'error');
             }
         }
 
-        function abrirModalReserva(maquina) {
-            if (!usuario.id_productor) {
-                mostrarToast('Tu cuenta no tiene un perfil de productor asociado.', 'error');
-                return;
-            }
+        async function cargarMisReservas() {
+            try {
+                const respuesta = await fetch('/api/reservas?id_productor=1');
+                const reservas = await respuesta.json();
+                
+                const tbody = document.querySelector('#tablaMisReservas tbody');
+                tbody.innerHTML = ''; 
 
+                if (reservas.length === 0) {
+                    tbody.innerHTML = '<tr><td colspan="6" style="text-align: center;">No tienes reservas registradas.</td></tr>';
+                    return;
+                }
+
+                reservas.forEach(reserva => {
+                    let colorEstado = 'black';
+                    if (reserva.estado === 'Pendiente') colorEstado = '#f39c12';
+                    if (reserva.estado === 'Confirmada') colorEstado = '#27ae60';
+                    if (reserva.estado === 'Cancelada') colorEstado = '#e74c3c';
+
+                    let botonValorar = '-';
+                    if (reserva.estado === 'Confirmada') {
+                        botonValorar = `<button class="btn" style="background-color: #f39c12;" onclick="abrirModalValoracion(${reserva.id_reserva})">Valorar</button>`;
+                    }
+
+                    const fila = document.createElement('tr');
+                    fila.innerHTML = `
+                        <td>${reserva.id_reserva}</td>
+                        <td>${reserva.marca} ${reserva.modelo}</td>
+                        <td>${reserva.fecha_inicio.substring(0,10)} al ${reserva.fecha_fin.substring(0,10)}</td>
+                        <td>$${reserva.costo_estimado}</td>
+                        <td style="color: ${colorEstado}; font-weight: bold;">${reserva.estado}</td>
+                        <td>${botonValorar}</td>
+                    `;
+                    tbody.appendChild(fila);
+                });
+            } catch (error) {
+                console.error('Error al cargar reservas:', error);
+            }
+        }
+
+        window.abrirModalReserva = (id_maquinaria, nombre_maquina) => {
             const modalHTML = `
                 <div class="modal-overlay" id="modalReserva">
-                    <div class="modal-content" style="text-align:left;">
-                        <h3>Reservar ${escapeHtml(maquina.marca)} ${escapeHtml(maquina.modelo)}</h3>
-                        <p>Precio por día: $${Number(maquina.precio_dia).toLocaleString('es-CL')}</p>
-                        <div style="margin-bottom:10px;">
-                            <label>Fecha de inicio:</label><br>
-                            <input type="date" id="fechaInicio" style="width:100%;padding:8px;">
-                        </div>
-                        <div style="margin-bottom:10px;">
-                            <label>Fecha de término:</label><br>
-                            <input type="date" id="fechaFin" style="width:100%;padding:8px;">
+                    <div class="modal-content">
+                        <h3>Reservar Maquinaria</h3>
+                        <p>Estás reservando: <strong>${nombre_maquina}</strong></p>
+                        <div style="margin-top: 20px; text-align: left;">
+                            <label>Fecha de inicio:</label>
+                            <input type="date" id="fecha_inicio" required style="width: 100%; padding: 8px; margin-bottom: 15px;">
+                            <label>Fecha de término:</label>
+                            <input type="date" id="fecha_fin" required style="width: 100%; padding: 8px;">
                         </div>
                         <div class="modal-buttons">
-                            <button class="btn-secondary" onclick="cerrarModalReserva()">Cancelar</button>
-                            <button class="btn" id="btnConfirmarReserva">Solicitar reserva</button>
+                            <button class="btn-secondary" onclick="cerrarModal('modalReserva')">Cancelar</button>
+                            <button class="btn" id="btnConfirmarReserva">Solicitar Reserva</button>
                         </div>
                     </div>
                 </div>
@@ -186,11 +216,11 @@
             setTimeout(() => modal.classList.add('show'), 10);
 
             document.getElementById('btnConfirmarReserva').onclick = async () => {
-                const fecha_inicio = document.getElementById('fechaInicio').value;
-                const fecha_fin = document.getElementById('fechaFin').value;
+                const fecha_inicio = document.getElementById('fecha_inicio').value;
+                const fecha_fin = document.getElementById('fecha_fin').value;
 
                 if (!fecha_inicio || !fecha_fin) {
-                    mostrarToast('Debes indicar ambas fechas', 'error');
+                    mostrarToast('Por favor, selecciona ambas fechas', 'error');
                     return;
                 }
 
@@ -199,48 +229,106 @@
                         method: 'POST',
                         headers: { 'Content-Type': 'application/json' },
                         body: JSON.stringify({
-                            id_productor: usuario.id_productor,
-                            id_maquinaria: maquina.id_maquinaria,
-                            fecha_inicio,
-                            fecha_fin
+                            id_productor: 1,
+                            id_maquinaria: id_maquinaria,
+                            fecha_inicio: fecha_inicio,
+                            fecha_fin: fecha_fin
                         })
                     });
-                    const data = await respuesta.json().catch(() => ({}));
 
                     if (respuesta.ok) {
-                        mostrarToast('Reserva solicitada. Costo estimado: $' + Number(data.costo_estimado).toLocaleString('es-CL'), 'success');
-                        cerrarModalReserva();
+                        mostrarToast('¡Reserva solicitada con éxito!', 'success');
+                        cerrarModal('modalReserva');
+                        cargarMisReservas();
                     } else {
-                        mostrarToast(data.error || 'No se pudo crear la reserva', 'error');
+                        const data = await respuesta.json();
+                        mostrarToast(data.error || 'Error al reservar', 'error');
                     }
                 } catch (error) {
                     console.error(error);
-                    mostrarToast('Error de conexión con el servidor', 'error');
+                    mostrarToast('Error de conexión al reservar', 'error');
                 }
             };
-        }
+        };
 
-        function cerrarModalReserva() {
-            const modal = document.getElementById('modalReserva');
+        window.abrirModalValoracion = (id_reserva) => {
+            const modalHTML = `
+                <div class="modal-overlay" id="modalValoracion">
+                    <div class="modal-content">
+                        <h3>Valorar Proveedor</h3>
+                        <p>¿Cómo fue tu experiencia con esta máquina?</p>
+                        <div style="margin-top: 20px; text-align: left;">
+                            <label>Puntuación (1 a 5):</label>
+                            <input type="number" id="puntuacion" min="1" max="5" required style="width: 100%; padding: 8px; margin-bottom: 15px;">
+                            <label>Comentario:</label>
+                            <textarea id="comentario" rows="3" style="width: 100%; padding: 8px;"></textarea>
+                        </div>
+                        <div class="modal-buttons">
+                            <button class="btn-secondary" onclick="cerrarModal('modalValoracion')">Cancelar</button>
+                            <button class="btn" id="btnEnviarValoracion">Enviar Valoración</button>
+                        </div>
+                    </div>
+                </div>
+            `;
+
+            document.body.insertAdjacentHTML('beforeend', modalHTML);
+            const modal = document.getElementById('modalValoracion');
+            setTimeout(() => modal.classList.add('show'), 10);
+
+            document.getElementById('btnEnviarValoracion').onclick = async () => {
+                const puntuacion = document.getElementById('puntuacion').value;
+                const comentario = document.getElementById('comentario').value;
+
+                if (puntuacion < 1 || puntuacion > 5) {
+                    mostrarToast('La puntuación debe ser entre 1 y 5', 'error');
+                    return;
+                }
+
+                try {
+                    const respuesta = await fetch('/api/reservas/valorar', {
+                        method: 'POST',
+                        headers: { 'Content-Type': 'application/json' },
+                        body: JSON.stringify({
+                            id_reserva: id_reserva,
+                            id_productor: 1,
+                            id_proveedor: 1,
+                            puntuacion: puntuacion,
+                            comentario: comentario
+                        })
+                    });
+
+                    if (respuesta.ok) {
+                        mostrarToast('¡Gracias por tu valoración!', 'success');
+                        cerrarModal('modalValoracion');
+                    } else {
+                        mostrarToast('Error al enviar valoración', 'error');
+                    }
+                } catch (error) {
+                    console.error(error);
+                    mostrarToast('Error de conexión', 'error');
+                }
+            };
+        };
+
+        window.cerrarModal = (idModal) => {
+            const modal = document.getElementById(idModal);
             if (modal) {
                 modal.classList.remove('show');
                 setTimeout(() => modal.remove(), 300);
             }
-        }
-
-        function escapeHtml(texto) {
-            const div = document.createElement('div');
-            div.textContent = texto == null ? '' : String(texto);
-            return div.innerHTML;
-        }
+        };
 
         function mostrarToast(mensaje, tipo) {
             const toast = document.createElement('div');
             toast.className = `toast ${tipo}`;
             toast.innerText = mensaje;
+            
             document.body.appendChild(toast);
+            
+            setTimeout(() => {
+                toast.classList.add('show');
+            }, 10);
 
-            setTimeout(() => toast.classList.add('show'), 10);
             setTimeout(() => {
                 toast.classList.remove('show');
                 setTimeout(() => toast.remove(), 300);

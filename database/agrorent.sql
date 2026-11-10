@@ -1,6 +1,5 @@
 -- ============================================
 -- BASE DE DATOS: AgroRent
--- Sistema de Gestión de Renta de Maquinaria Agrícola
 -- ============================================
 
 DROP DATABASE IF EXISTS agrorent;
@@ -30,6 +29,7 @@ CREATE TABLE usuario (
     email VARCHAR(100) NOT NULL UNIQUE,
     password VARCHAR(255) NOT NULL,
     telefono VARCHAR(20),
+    rut VARCHAR(12) UNIQUE,
     id_rol INT NOT NULL,
     fecha_registro DATETIME DEFAULT CURRENT_TIMESTAMP,
     estado BOOLEAN DEFAULT TRUE,
@@ -42,7 +42,6 @@ CREATE TABLE usuario (
 CREATE TABLE productor (
     id_productor INT AUTO_INCREMENT PRIMARY KEY,
     id_usuario INT NOT NULL UNIQUE,
-    rut VARCHAR(12) NOT NULL UNIQUE,
     direccion VARCHAR(200),
     tipo_cultivo VARCHAR(100),
     FOREIGN KEY (id_usuario) REFERENCES usuario(id_usuario) ON DELETE CASCADE
@@ -54,7 +53,6 @@ CREATE TABLE productor (
 CREATE TABLE proveedor (
     id_proveedor INT AUTO_INCREMENT PRIMARY KEY,
     id_usuario INT NOT NULL UNIQUE,
-    rut VARCHAR(12) NOT NULL UNIQUE,
     nombre_empresa VARCHAR(100),
     direccion VARCHAR(200),
     FOREIGN KEY (id_usuario) REFERENCES usuario(id_usuario) ON DELETE CASCADE
@@ -214,52 +212,41 @@ CREATE TABLE sesion (
 );
 
 -- ============================================
--- DATOS DE PRUEBA
+-- DATOS DE PRUEBA (Usuarios y Roles)
 -- ============================================
 
--- Usuarios (contraseñas en texto plano solo para pruebas)
--- Contraseña de todos los usuarios de prueba: agrorent123
--- (hashes bcrypt reales; el login usa bcrypt.compare, no texto plano)
-INSERT INTO usuario (nombre, email, password, telefono, id_rol) VALUES
-('Jorge Muñoz', 'jorge@agroma.cl', '\\.go3.h9ra2Ox7lZr9aLWJotvarCnsqFq', '+56912345678', 2),
-('María González', 'maria@productor.cl', '\\.d9cJ4taqLoowa.X.Na', '+56923456789', 1),
-('Pedro Silva', 'pedro@productor.cl', '\\.IzP0CyGY8I.nI57o0mCl4079qDOMeG', '+56934567890', 1),
-('Admin AgroRent', 'admin@agrorent.cl', '\\/VltkS/jPC27OipNSZe5YGQRZRFUUMMmUMLBkOtYrKy37XN5oy', '+56945678901', 3);
+INSERT INTO usuario (nombre, email, password, telefono, rut, id_rol) VALUES
+('Jorge Muñoz', 'jorge@agroma.cl', 'hash123', '+56912345678', '11.111.111-1', 2),
+('María González', 'maria@productor.cl', 'hash456', '+56923456789', '22.222.222-2', 1),
+('Pedro Silva', 'pedro@productor.cl', 'hash789', '+56934567890', '33.333.333-3', 1),
+('Admin AgroRent', 'admin@agrorent.cl', 'hash000', '+56945678901', '44.444.444-4', 3);
 
--- Productores
-INSERT INTO productor (id_usuario, rut, direccion, tipo_cultivo) VALUES
-(2, '12.345.678-9', 'Camino a Puaucho Km 3, Osorno', 'Trigo'),
-(3, '23.456.789-0', 'Ruta 5 Sur Km 950, San Pablo', 'Papas');
+INSERT INTO productor (id_usuario, direccion, tipo_cultivo) VALUES
+(2, 'Camino a Puaucho Km 3, Osorno', 'Trigo'),
+(3, 'Ruta 5 Sur Km 950, San Pablo', 'Papas');
 
--- Proveedor
-INSERT INTO proveedor (id_usuario, rut, nombre_empresa, direccion) VALUES
-(1, '11.111.111-1', 'AgroMaq Osorno', 'Camino a Puaucho Km 5, Osorno');
+INSERT INTO proveedor (id_usuario, nombre_empresa, direccion) VALUES
+(1, 'AgroMaq Osorno', 'Camino a Puaucho Km 5, Osorno');
 
--- Maquinaria
 INSERT INTO maquinaria (id_proveedor, id_categoria, marca, modelo, anio, patente, precio_dia, estado, descripcion) VALUES
 (1, 1, 'John Deere', '6120M', 2020, 'AB1234', 150000, 'Disponible', 'Tractor con 120 HP, ideal para labores de arrastre'),
 (1, 2, 'Vaderstad', 'Rapid 400S', 2019, 'CD5678', 250000, 'Disponible', 'Sembradora de siembra directa'),
 (1, 3, 'Claas', 'Lexion 5300', 2021, 'EF9012', 500000, 'Rentado', 'Cosechadora de alto rendimiento');
 
--- Reserva
 INSERT INTO reserva (id_productor, id_maquinaria, fecha_inicio, fecha_fin, estado, costo_estimado) VALUES
 (1, 1, '2026-11-01', '2026-11-05', 'Confirmada', 750000),
 (2, 2, '2026-11-10', '2026-11-12', 'Pendiente', 500000);
 
--- Renta
 INSERT INTO renta (id_reserva, fecha_entrega, estado) VALUES
 (1, '2026-11-01 08:00:00', 'En uso');
 
--- Pago
 INSERT INTO pago (id_renta, monto, metodo_pago) VALUES
 (1, 375000, 'Transferencia');
 
--- Notificación
 INSERT INTO notificacion (id_usuario, mensaje) VALUES
 (2, 'Tu reserva del tractor John Deere ha sido confirmada.'),
 (1, 'Tienes una nueva reserva pendiente de confirmar.');
 
--- Valoración
 INSERT INTO valoracion (id_productor, id_proveedor, puntuacion, comentario) VALUES
 (1, 1, 5, 'Excelente servicio, maquinaria en perfecto estado.');
 

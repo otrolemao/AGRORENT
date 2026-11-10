@@ -68,7 +68,6 @@
     </div>
 
     <script>
-        // Si ya hay una sesión activa, ir directo a su panel.
         (function redirigirSiHaySesion() {
             try {
                 const guardado = localStorage.getItem('agrorent_usuario');
@@ -95,14 +94,12 @@
                 const data = await respuesta.json();
 
                 if (respuesta.ok) {
-                    // Guardar la sesión para que los paneles sepan quién es el usuario.
+                    // Guardar la sesión
                     const usuario = {
                         id: data.usuario.id,
                         nombre: data.usuario.nombre,
                         email: data.usuario.email,
-                        rol: Number(data.usuario.rol),
-                        id_proveedor: data.usuario.id_proveedor,
-                        id_productor: data.usuario.id_productor
+                        rol: Number(data.usuario.rol)
                     };
                     localStorage.setItem('agrorent_usuario', JSON.stringify(usuario));
 

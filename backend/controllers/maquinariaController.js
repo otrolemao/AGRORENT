@@ -15,8 +15,6 @@ exports.buscarMaquinaria = async (req, res) => {
         const condiciones = [];
         const params = [];
 
-        // Si se pide un estado concreto, se respeta; si no, el catálogo público
-        // muestra únicamente lo disponible.
         if (estado) {
             condiciones.push('m.estado = ?');
             params.push(estado);
