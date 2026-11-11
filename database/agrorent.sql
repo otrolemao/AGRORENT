@@ -177,11 +177,13 @@ CREATE TABLE reclamo (
 -- ============================================
 CREATE TABLE valoracion (
     id_valoracion INT AUTO_INCREMENT PRIMARY KEY,
+    id_reserva INT NOT NULL UNIQUE,
     id_productor INT NOT NULL,
     id_proveedor INT NOT NULL,
     puntuacion INT NOT NULL CHECK (puntuacion BETWEEN 1 AND 5),
     comentario TEXT,
     fecha DATETIME DEFAULT CURRENT_TIMESTAMP,
+    FOREIGN KEY (id_reserva) REFERENCES reserva(id_reserva) ON DELETE CASCADE,
     FOREIGN KEY (id_productor) REFERENCES productor(id_productor),
     FOREIGN KEY (id_proveedor) REFERENCES proveedor(id_proveedor)
 );
@@ -215,11 +217,13 @@ CREATE TABLE sesion (
 -- DATOS DE PRUEBA (Usuarios y Roles)
 -- ============================================
 
+-- Usuarios de prueba. Contraseña de todos: agrorent123
+-- Los hashes son bcrypt reales (el login usa bcrypt.compare).
 INSERT INTO usuario (nombre, email, password, telefono, rut, id_rol) VALUES
-('Jorge Muñoz', 'jorge@agroma.cl', 'hash123', '+56912345678', '11.111.111-1', 2),
-('María González', 'maria@productor.cl', 'hash456', '+56923456789', '22.222.222-2', 1),
-('Pedro Silva', 'pedro@productor.cl', 'hash789', '+56934567890', '33.333.333-3', 1),
-('Admin AgroRent', 'admin@agrorent.cl', 'hash000', '+56945678901', '44.444.444-4', 3);
+('Jorge Muñoz', 'jorge@agroma.cl', '$2b$10$oo33ohbJXz3Vsl7EeM012uI4FXf11tSIX7LPX.137uAzn63DfhTw6', '+56912345678', '11.111.111-1', 2),
+('María González', 'maria@productor.cl', '$2b$10$w66/xuzuLAXHRk1bAFNpQO.ydo8wOU7pZpJXzjFOZEO6KNOSL/tl6', '+56923456789', '22.222.222-2', 1),
+('Pedro Silva', 'pedro@productor.cl', '$2b$10$KZ7RaOD2sXhg.rxeQlC99urmWBFGQkec6L.C069P3jUXXusM98Hoa', '+56934567890', '33.333.333-3', 1),
+('Admin AgroRent', 'admin@agrorent.cl', '$2b$10$ySwlSuXhIOPQJ3SGMIEVCOr5mCDmTURYHdR2JaysIWmYMvByn9HKG', '+56945678901', '44.444.444-4', 3);
 
 INSERT INTO productor (id_usuario, direccion, tipo_cultivo) VALUES
 (2, 'Camino a Puaucho Km 3, Osorno', 'Trigo'),
@@ -247,8 +251,8 @@ INSERT INTO notificacion (id_usuario, mensaje) VALUES
 (2, 'Tu reserva del tractor John Deere ha sido confirmada.'),
 (1, 'Tienes una nueva reserva pendiente de confirmar.');
 
-INSERT INTO valoracion (id_productor, id_proveedor, puntuacion, comentario) VALUES
-(1, 1, 5, 'Excelente servicio, maquinaria en perfecto estado.');
+INSERT INTO valoracion (id_reserva, id_productor, id_proveedor, puntuacion, comentario) VALUES
+(1, 1, 1, 5, 'Excelente servicio, maquinaria en perfecto estado.');
 
 -- ============================================
 -- CONSULTAS DE VERIFICACIÓN

@@ -1,9 +1,19 @@
+let idProveedor = null;
+
 document.addEventListener('DOMContentLoaded', () => {
-    const usuarioGuardado = localStorage.getItem('agrorent_usuario');
-    if (!usuarioGuardado) {
+    let usuarioGuardado = null;
+    try {
+        usuarioGuardado = JSON.parse(localStorage.getItem('agrorent_usuario'));
+    } catch (error) {
+        usuarioGuardado = null;
+    }
+
+    if (!usuarioGuardado || !usuarioGuardado.id_proveedor) {
         window.location.href = 'index.html';
         return;
     }
+
+    idProveedor = usuarioGuardado.id_proveedor;
 
     cargarMaquinaria();
     cargarCategorias();
@@ -23,7 +33,7 @@ document.addEventListener('DOMContentLoaded', () => {
             }
             
             const nuevaMaquina = {
-                id_proveedor: 1,
+                id_proveedor: idProveedor,
                 id_categoria: Number(document.getElementById('categoria').value),
                 marca: document.getElementById('marca').value,
                 modelo: document.getElementById('modelo').value,
@@ -111,8 +121,8 @@ async function cargarCategorias() {
 
 async function cargarReservas() {
     try {
-        // Enviamos id_proveedor=1 para filtrar solo las reservas de este proveedor
-        const respuesta = await fetch('/api/reservas?id_proveedor=1');
+        // Filtramos solo las reservas del proveedor que tiene la sesión abierta.
+        const respuesta = await fetch(`/api/reservas?id_proveedor=${encodeURIComponent(idProveedor)}`);
         const reservas = await respuesta.json();
         
         const tbody = document.querySelector('#tablaReservas tbody');

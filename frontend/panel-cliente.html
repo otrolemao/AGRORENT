@@ -104,7 +104,10 @@
 
     <script>
         const usuarioGuardado = JSON.parse(localStorage.getItem('agrorent_usuario'));
-        if (usuarioGuardado && usuarioGuardado.nombre) {
+        const idProductor = usuarioGuardado ? usuarioGuardado.id_productor : null;
+        if (!idProductor) {
+            window.location.href = 'index.html';
+        } else if (usuarioGuardado.nombre) {
             document.getElementById('nombreUsuario').innerText = usuarioGuardado.nombre;
         }
 
@@ -153,7 +156,7 @@
 
         async function cargarMisReservas() {
             try {
-                const respuesta = await fetch('/api/reservas?id_productor=1');
+                const respuesta = await fetch(`/api/reservas?id_productor=${encodeURIComponent(idProductor)}`);
                 const reservas = await respuesta.json();
                 
                 const tbody = document.querySelector('#tablaMisReservas tbody');
@@ -172,7 +175,7 @@
 
                     let botonValorar = '-';
                     if (reserva.estado === 'Confirmada') {
-                        botonValorar = `<button class="btn" style="background-color: #f39c12;" onclick="abrirModalValoracion(${reserva.id_reserva})">Valorar</button>`;
+                        botonValorar = `<button class="btn" style="background-color: #f39c12;" onclick="abrirModalValoracion(${reserva.id_reserva}, ${reserva.id_proveedor})">Valorar</button>`;
                     }
 
                     const fila = document.createElement('tr');
@@ -229,7 +232,7 @@
                         method: 'POST',
                         headers: { 'Content-Type': 'application/json' },
                         body: JSON.stringify({
-                            id_productor: 1,
+                            id_productor: idProductor,
                             id_maquinaria: id_maquinaria,
                             fecha_inicio: fecha_inicio,
                             fecha_fin: fecha_fin
@@ -251,7 +254,7 @@
             };
         };
 
-        window.abrirModalValoracion = (id_reserva) => {
+        window.abrirModalValoracion = (id_reserva, id_proveedor) => {
             const modalHTML = `
                 <div class="modal-overlay" id="modalValoracion">
                     <div class="modal-content">
@@ -279,8 +282,9 @@
                 const puntuacion = document.getElementById('puntuacion').value;
                 const comentario = document.getElementById('comentario').value;
 
-                if (puntuacion < 1 || puntuacion > 5) {
-                    mostrarToast('La puntuación debe ser entre 1 y 5', 'error');
+                const nota = Number(puntuacion);
+                if (!Number.isInteger(nota) || nota < 1 || nota > 5) {
+                    mostrarToast('La puntuación debe ser un número entero entre 1 y 5', 'error');
                     return;
                 }
 
@@ -290,18 +294,20 @@
                         headers: { 'Content-Type': 'application/json' },
                         body: JSON.stringify({
                             id_reserva: id_reserva,
-                            id_productor: 1,
-                            id_proveedor: 1,
-                            puntuacion: puntuacion,
+                            id_productor: idProductor,
+                            id_proveedor: id_proveedor,
+                            puntuacion: nota,
                             comentario: comentario
                         })
                     });
 
+                    const data = await respuesta.json();
                     if (respuesta.ok) {
                         mostrarToast('¡Gracias por tu valoración!', 'success');
                         cerrarModal('modalValoracion');
+                        cargarMisReservas();
                     } else {
-                        mostrarToast('Error al enviar valoración', 'error');
+                        mostrarToast(data.error || 'Error al enviar valoración', 'error');
                     }
                 } catch (error) {
                     console.error(error);
