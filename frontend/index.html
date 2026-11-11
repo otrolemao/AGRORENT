@@ -68,17 +68,28 @@
     </div>
 
     <script>
+        // 1. VERIFICAR SESIÓN ACTIVA
         (function redirigirSiHaySesion() {
             try {
                 const guardado = localStorage.getItem('agrorent_usuario');
                 if (!guardado) return;
                 const u = JSON.parse(guardado);
+                
+                // Si la sesión antigua no tiene los IDs necesarios, la borramos para evitar el bucle
+                if (!u.id) {
+                    localStorage.removeItem('agrorent_usuario');
+                    return;
+                }
+
                 if (u.rol === 3) window.location.href = 'panel-admin.html';
                 else if (u.rol === 2) window.location.href = 'panel-proveedor.html';
                 else if (u.rol === 1) window.location.href = 'panel-cliente.html';
-            } catch (e) { /* sesión corrupta: se ignora */ }
+            } catch (e) { 
+                localStorage.removeItem('agrorent_usuario'); 
+            }
         })();
 
+        // 2. LÓGICA DE LOGIN
         document.getElementById('loginForm').addEventListener('submit', async (e) => {
             e.preventDefault();
             const email = document.getElementById('email').value;
@@ -94,13 +105,16 @@
                 const data = await respuesta.json();
 
                 if (respuesta.ok) {
-                    // Guardar la sesión
+                    // Guardar la sesión CON TODOS LOS DATOS (incluyendo id_proveedor e id_productor)
                     const usuario = {
                         id: data.usuario.id,
                         nombre: data.usuario.nombre,
                         email: data.usuario.email,
-                        rol: Number(data.usuario.rol)
+                        rol: Number(data.usuario.rol),
+                        id_proveedor: data.usuario.id_proveedor,
+                        id_productor: data.usuario.id_productor
                     };
+                    
                     localStorage.setItem('agrorent_usuario', JSON.stringify(usuario));
 
                     mostrarToast('¡Bienvenido ' + usuario.nombre + '!', 'success');
@@ -124,6 +138,7 @@
             }
         });
 
+        // 3. FUNCIÓN TOAST (Mensajes flotantes)
         function mostrarToast(mensaje, tipo) {
             const toast = document.createElement('div');
             toast.className = `toast ${tipo}`;
