@@ -45,7 +45,7 @@ exports.crearReserva = async (req, res) => {
             return res.status(409).json({ error: `La maquinaria no está disponible (estado: ${maquina[0].estado})` });
         }
 
-        // Evitar superposición
+        // Evitar superposición de reservas activas para la misma máquina.
         const [cruce] = await db.execute(
             `SELECT id_reserva FROM reserva
              WHERE id_maquinaria = ?
@@ -64,7 +64,7 @@ exports.crearReserva = async (req, res) => {
         const dias = Math.max(1, Math.ceil((fin - inicio) / MS_POR_DIA));
         const costo_estimado = dias * Number(maquina[0].precio_dia);
         
-        // CÁLCULO DE LA SEÑA (20%)
+        // Cálculo de la seña (20%)
         const monto_seña = costo_estimado * 0.20;
 
         const [resultado] = await db.execute(
@@ -133,30 +133,48 @@ exports.actualizarEstadoReserva = async (req, res) => {
             });
         }
 
+        // 1. Buscamos la reserva actual
         const [existe] = await db.execute(
-            'SELECT id_reserva, id_maquinaria FROM reserva WHERE id_reserva = ?',
+            'SELECT id_reserva, id_maquinaria, estado_pago FROM reserva WHERE id_reserva = ?',
             [id]
         );
         if (existe.length === 0) {
             return res.status(404).json({ error: 'Reserva no encontrada' });
         }
 
-        await db.execute('UPDATE reserva SET estado = ? WHERE id_reserva = ?', [estado, id]);
+        const reservaActual = existe[0];
 
+        // 2. Si se rechaza o cancela, se devuelve la seña (Reembolso)
+        let nuevoEstadoPago = reservaActual.estado_pago;
+        if ((estado === 'Cancelada' || estado === 'Rechazada') && reservaActual.estado_pago === 'Pagado') {
+            nuevoEstadoPago = 'Reembolsado';
+        }
+
+        // 3. Actualizamos estado de reserva y de pago
+        await db.execute(
+            'UPDATE reserva SET estado = ?, estado_pago = ? WHERE id_reserva = ?', 
+            [estado, nuevoEstadoPago, id]
+        );
+
+        // 4. Sincronizamos el estado de la maquinaria
         if (estado === 'Confirmada') {
-            await db.execute("UPDATE maquinaria SET estado = 'Rentado' WHERE id_maquinaria = ?", [existe[0].id_maquinaria]);
+            await db.execute("UPDATE maquinaria SET estado = 'Rentado' WHERE id_maquinaria = ?", [reservaActual.id_maquinaria]);
         } else if (estado === 'Cancelada' || estado === 'Rechazada') {
             const [activas] = await db.execute(
                 `SELECT COUNT(*) AS total FROM reserva
                  WHERE id_maquinaria = ? AND estado = 'Confirmada'`,
-                [existe[0].id_maquinaria]
+                [reservaActual.id_maquinaria]
             );
             if (activas[0].total === 0) {
-                await db.execute("UPDATE maquinaria SET estado = 'Disponible' WHERE id_maquinaria = ?", [existe[0].id_maquinaria]);
+                await db.execute("UPDATE maquinaria SET estado = 'Disponible' WHERE id_maquinaria = ?", [reservaActual.id_maquinaria]);
             }
         }
 
-        res.status(200).json({ mensaje: 'Estado de la reserva actualizado', estado });
+        res.status(200).json({ 
+            mensaje: `Reserva actualizada a ${estado}. Estado de pago: ${nuevoEstadoPago}`, 
+            estado: estado,
+            estado_pago: nuevoEstadoPago
+        });
     } catch (error) {
         console.error(error);
         res.status(500).json({ error: 'Error al actualizar la reserva' });

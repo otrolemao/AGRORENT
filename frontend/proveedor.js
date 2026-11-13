@@ -67,6 +67,7 @@ document.addEventListener('DOMContentLoaded', () => {
 
 async function cargarMaquinaria() {
     try {
+        // Filtramos por el ID del proveedor logueado
         const respuesta = await fetch(`/api/maquinaria/buscar?id_proveedor=${encodeURIComponent(idProveedor)}`);
         const maquinas = await respuesta.json();
         
@@ -141,23 +142,32 @@ async function cargarReservas() {
         }
 
         reservas.forEach(reserva => {
-            let colorEstado = 'black';
+            let colorEstado = '#212529';
             if (reserva.estado === 'Pendiente') colorEstado = '#f39c12';
-            if (reserva.estado === 'Confirmada') colorEstado = '#27ae60';
-            if (reserva.estado === 'Cancelada') colorEstado = '#e74c3c';
+            if (reserva.estado === 'Confirmada') colorEstado = '#07503f'; // Verde oscuro
+            if (reserva.estado === 'Cancelada' || reserva.estado === 'Rechazada') colorEstado = '#dc3545';
 
-            // La seña se muestra en verde si está pagada, en rojo si no.
-            const colorPago = reserva.estado_pago === 'Pagado' ? '#07503f' : '#dc3545';
-            const textPago = reserva.estado_pago === 'Pagado' 
-                                ? `Seña Pagada ($${Number(reserva.monto_seña).toLocaleString('es-CL')})` 
-                                : `Seña Pendiente`;
+            // Lógica visual para el estado del pago de la seña
+            let colorPago = '#212529';
+            let textPago = '';
+            
+            if (reserva.estado_pago === 'Pagado') {
+                colorPago = '#07503f'; // Verde
+                textPago = `Seña Pagada ($${Number(reserva.monto_seña).toLocaleString('es-CL')})`;
+            } else if (reserva.estado_pago === 'Pendiente') {
+                colorPago = '#f39c12'; // Naranja
+                textPago = `Seña Pendiente`;
+            } else if (reserva.estado_pago === 'Reembolsado') {
+                colorPago = '#6d6d6d'; // Gris
+                textPago = `Seña Reembolsada ($${Number(reserva.monto_seña).toLocaleString('es-CL')})`;
+            }
 
             let botones = '-';
-            // Solo permitir aceptar si la seña está pagada
+            // El proveedor SOLO puede aceptar o rechazar si el pago está en estado 'Pagado'
             if (reserva.estado === 'Pendiente' && reserva.estado_pago === 'Pagado') {
                 botones = `
                     <button class="btn-aceptar" onclick="cambiarEstadoReserva(${reserva.id_reserva}, 'Confirmada')">Aceptar</button>
-                    <button class="btn-rechazar" onclick="cambiarEstadoReserva(${reserva.id_reserva}, 'Cancelada')">Rechazar</button>
+                    <button class="btn-rechazar" onclick="cambiarEstadoReserva(${reserva.id_reserva}, 'Rechazada')">Rechazar</button>
                 `;
             } else if (reserva.estado === 'Pendiente' && reserva.estado_pago === 'Pendiente') {
                 botones = '<span style="font-size:12px; color:#dc3545;">Esperando pago del cliente</span>';
@@ -165,11 +175,11 @@ async function cargarReservas() {
 
             const fila = document.createElement('tr');
             fila.innerHTML = `
-                <td>${reserva.id_reserva}</td>
-                <td>${reserva.marca} ${reserva.modelo}</td>
+                <td>#${reserva.id_reserva}</td>
+                <td><strong>${reserva.marca} ${reserva.modelo}</strong></td>
                 <td>${reserva.fecha_inicio.substring(0,10)} al ${reserva.fecha_fin.substring(0,10)}</td>
                 <td>$${reserva.costo_estimado}</td>
-                <td style="color: ${colorEstado}; font-weight: bold;">${reserva.estado}</td>
+                <td style="color: ${colorEstado}; font-weight: 600;">${reserva.estado}</td>
                 <td>
                     <span style="color: ${colorPago}; font-weight: bold; font-size: 12px; display: block; margin-bottom: 5px;">${textPago}</span>
                     ${botones}
@@ -188,8 +198,8 @@ window.cambiarEstadoReserva = async (id, nuevoEstado) => {
     const modalHTML = `
         <div class="modal-overlay" id="modalEstadoReserva">
             <div class="modal-content">
-                <h3>Confirmar Acción</h3>
-                <p>¿Estás seguro de que deseas <strong>${accion.toLowerCase()}</strong> esta reserva?</p>
+                <h3 style="font-family: var(--font-serif); font-size: 28px; margin-bottom: 10px;">Confirmar Acción</h3>
+                <p style="color: #6d6d6d;">¿Estás seguro de que deseas <strong>${accion.toLowerCase()}</strong> esta reserva?</p>
                 <div class="modal-buttons">
                     <button class="btn-secondary" onclick="cerrarModalReserva()">Cancelar</button>
                     <button class="btn ${nuevoEstado === 'Confirmada' ? '' : 'btn-danger'}" id="btnConfirmarEstado">Sí, ${accion}</button>
@@ -237,8 +247,8 @@ window.eliminarMaquina = async (id) => {
     const modalHTML = `
         <div class="modal-overlay" id="modalEliminar">
             <div class="modal-content">
-                <h3>Confirmar Eliminación</h3>
-                <p>¿Estás seguro de que deseas eliminar esta máquina? Esta acción no se puede deshacer.</p>
+                <h3 style="font-family: var(--font-serif); font-size: 28px; margin-bottom: 10px;">Confirmar Eliminación</h3>
+                <p style="color: #6d6d6d;">¿Estás seguro de que deseas eliminar esta máquina? Esta acción no se puede deshacer.</p>
                 <div class="modal-buttons">
                     <button class="btn-secondary" onclick="cerrarModal()">Cancelar</button>
                     <button class="btn btn-danger" id="btnConfirmarEliminar">Sí, eliminar</button>
@@ -254,6 +264,7 @@ window.eliminarMaquina = async (id) => {
 
     document.getElementById('btnConfirmarEliminar').onclick = async () => {
         try {
+            // Enviamos el id_proveedor en la URL para la validación de seguridad
             const respuesta = await fetch(`/api/maquinaria/${id}?id_proveedor=${encodeURIComponent(idProveedor)}`, {
                 method: 'DELETE'
             });

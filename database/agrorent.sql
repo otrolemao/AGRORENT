@@ -86,7 +86,7 @@ CREATE TABLE maquinaria (
     anio INT,
     patente VARCHAR(20) UNIQUE,
     precio_dia DECIMAL(10,2) NOT NULL,
-    estado ENUM('Disponible', 'Rentado', 'Mantenimiento') DEFAULT 'Disponible',
+    estado ENUM('Pendiente', 'Confirmada', 'Rechazada', 'Cancelada', 'Completada') DEFAULT 'Pendiente',
     foto VARCHAR(255),
     descripcion TEXT,
     fecha_registro DATETIME DEFAULT CURRENT_TIMESTAMP,
