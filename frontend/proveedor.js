@@ -55,7 +55,8 @@ document.addEventListener('DOMContentLoaded', () => {
                     form.reset(); 
                     cargarMaquinaria(); 
                 } else {
-                    mostrarToast('Error al registrar la máquina', 'error');
+                    const data = await respuesta.json();
+                    mostrarToast(data.error || 'Error al registrar la máquina', 'error');
                 }
             } catch (error) {
                 console.error('Error:', error);
@@ -66,13 +67,19 @@ document.addEventListener('DOMContentLoaded', () => {
 
 async function cargarMaquinaria() {
     try {
-        const respuesta = await fetch('/api/maquinaria/buscar');
+        // AHORA ENVIAMOS EL ID DEL PROVEEDOR
+        const respuesta = await fetch(`/api/maquinaria/buscar?id_proveedor=${encodeURIComponent(idProveedor)}`);
         const maquinas = await respuesta.json();
         
         const tbody = document.querySelector('#tablaMaquinaria tbody');
         if (!tbody) return;
 
         tbody.innerHTML = ''; 
+
+        if (maquinas.length === 0) {
+            tbody.innerHTML = '<tr><td colspan="6" style="text-align: center;">No tienes máquinas registradas.</td></tr>';
+            return;
+        }
 
         maquinas.forEach(maquina => {
             const fila = document.createElement('tr');
@@ -121,7 +128,6 @@ async function cargarCategorias() {
 
 async function cargarReservas() {
     try {
-        // Filtramos solo las reservas del proveedor que tiene la sesión abierta.
         const respuesta = await fetch(`/api/reservas?id_proveedor=${encodeURIComponent(idProveedor)}`);
         const reservas = await respuesta.json();
         
@@ -237,14 +243,18 @@ window.eliminarMaquina = async (id) => {
 
     document.getElementById('btnConfirmarEliminar').onclick = async () => {
         try {
-            const respuesta = await fetch(`/api/maquinaria/${id}`, {
+            // AQUÍ ENVIAMOS EL ID_PROVEEDOR AL BACKEND PARA VALIDAR SEGURIDAD
+            const respuesta = await fetch(`/api/maquinaria/${id}?id_proveedor=${encodeURIComponent(idProveedor)}`, {
                 method: 'DELETE'
             });
+            
+            const data = await respuesta.json().catch(() => ({}));
+
             if (respuesta.ok) {
                 mostrarToast('Máquina eliminada del sistema', 'success');
                 cargarMaquinaria();
             } else {
-                mostrarToast('Error al eliminar', 'error');
+                mostrarToast(data.error || 'Error al eliminar', 'error');
             }
         } catch (error) {
             console.error('Error al eliminar:', error);

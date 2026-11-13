@@ -170,15 +170,29 @@ exports.actualizarMaquinaria = async (req, res) => {
     }
 };
 
+// --- SEGURIDAD APLICADA AQUÍ ---
 exports.eliminarMaquinaria = async (req, res) => {
     try {
         const { id } = req.params;
+        const { id_proveedor } = req.query; // Recibimos quién está borrando
 
-        const [existe] = await db.execute('SELECT id_maquinaria FROM maquinaria WHERE id_maquinaria = ?', [id]);
+        if (!id_proveedor) {
+            return res.status(400).json({ error: 'No se especificó el proveedor que intenta eliminar.' });
+        }
+
+        // 1. Buscamos la máquina y verificamos si es del proveedor
+        const [existe] = await db.execute('SELECT id_proveedor FROM maquinaria WHERE id_maquinaria = ?', [id]);
+        
         if (existe.length === 0) {
             return res.status(404).json({ error: 'Maquinaria no encontrada' });
         }
 
+        // 2. REGLA DE SEGURIDAD: Si la máquina es de otro proveedor, rebotamos la petición
+        if (Number(existe[0].id_proveedor) !== Number(id_proveedor)) {
+            return res.status(403).json({ error: 'Acceso denegado: No puedes eliminar una máquina que no te pertenece.' });
+        }
+
+        // 3. Si es suyo, la eliminamos
         await db.execute('DELETE FROM maquinaria WHERE id_maquinaria = ?', [id]);
 
         res.status(200).json({ mensaje: 'Maquinaria eliminada exitosamente' });
