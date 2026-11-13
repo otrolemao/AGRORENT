@@ -67,7 +67,6 @@ document.addEventListener('DOMContentLoaded', () => {
 
 async function cargarMaquinaria() {
     try {
-        // AHORA ENVIAMOS EL ID DEL PROVEEDOR
         const respuesta = await fetch(`/api/maquinaria/buscar?id_proveedor=${encodeURIComponent(idProveedor)}`);
         const maquinas = await respuesta.json();
         
@@ -147,12 +146,21 @@ async function cargarReservas() {
             if (reserva.estado === 'Confirmada') colorEstado = '#27ae60';
             if (reserva.estado === 'Cancelada') colorEstado = '#e74c3c';
 
+            // La seña se muestra en verde si está pagada, en rojo si no.
+            const colorPago = reserva.estado_pago === 'Pagado' ? '#07503f' : '#dc3545';
+            const textPago = reserva.estado_pago === 'Pagado' 
+                                ? `Seña Pagada ($${Number(reserva.monto_seña).toLocaleString('es-CL')})` 
+                                : `Seña Pendiente`;
+
             let botones = '-';
-            if (reserva.estado === 'Pendiente') {
+            // Solo permitir aceptar si la seña está pagada
+            if (reserva.estado === 'Pendiente' && reserva.estado_pago === 'Pagado') {
                 botones = `
                     <button class="btn-aceptar" onclick="cambiarEstadoReserva(${reserva.id_reserva}, 'Confirmada')">Aceptar</button>
                     <button class="btn-rechazar" onclick="cambiarEstadoReserva(${reserva.id_reserva}, 'Cancelada')">Rechazar</button>
                 `;
+            } else if (reserva.estado === 'Pendiente' && reserva.estado_pago === 'Pendiente') {
+                botones = '<span style="font-size:12px; color:#dc3545;">Esperando pago del cliente</span>';
             }
 
             const fila = document.createElement('tr');
@@ -162,7 +170,10 @@ async function cargarReservas() {
                 <td>${reserva.fecha_inicio.substring(0,10)} al ${reserva.fecha_fin.substring(0,10)}</td>
                 <td>$${reserva.costo_estimado}</td>
                 <td style="color: ${colorEstado}; font-weight: bold;">${reserva.estado}</td>
-                <td>${botones}</td>
+                <td>
+                    <span style="color: ${colorPago}; font-weight: bold; font-size: 12px; display: block; margin-bottom: 5px;">${textPago}</span>
+                    ${botones}
+                </td>
             `;
             tbody.appendChild(fila);
         });
@@ -243,7 +254,6 @@ window.eliminarMaquina = async (id) => {
 
     document.getElementById('btnConfirmarEliminar').onclick = async () => {
         try {
-            // AQUÍ ENVIAMOS EL ID_PROVEEDOR AL BACKEND PARA VALIDAR SEGURIDAD
             const respuesta = await fetch(`/api/maquinaria/${id}?id_proveedor=${encodeURIComponent(idProveedor)}`, {
                 method: 'DELETE'
             });

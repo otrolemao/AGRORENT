@@ -45,7 +45,7 @@ exports.crearReserva = async (req, res) => {
             return res.status(409).json({ error: `La maquinaria no está disponible (estado: ${maquina[0].estado})` });
         }
 
-        // Evitar superposición de reservas activas para la misma máquina.
+        // Evitar superposición
         const [cruce] = await db.execute(
             `SELECT id_reserva FROM reserva
              WHERE id_maquinaria = ?
@@ -63,18 +63,22 @@ exports.crearReserva = async (req, res) => {
 
         const dias = Math.max(1, Math.ceil((fin - inicio) / MS_POR_DIA));
         const costo_estimado = dias * Number(maquina[0].precio_dia);
+        
+        // CÁLCULO DE LA SEÑA (20%)
+        const monto_seña = costo_estimado * 0.20;
 
         const [resultado] = await db.execute(
-            `INSERT INTO reserva (id_productor, id_maquinaria, fecha_inicio, fecha_fin, estado, costo_estimado)
-             VALUES (?, ?, ?, ?, 'Pendiente', ?)`,
-            [id_productor, id_maquinaria, fecha_inicio, fecha_fin, costo_estimado]
+            `INSERT INTO reserva (id_productor, id_maquinaria, fecha_inicio, fecha_fin, estado, costo_estimado, monto_seña, estado_pago)
+             VALUES (?, ?, ?, ?, 'Pendiente', ?, ?, 'Pagado')`,
+            [id_productor, id_maquinaria, fecha_inicio, fecha_fin, costo_estimado, monto_seña]
         );
 
         res.status(201).json({
-            mensaje: 'Reserva solicitada exitosamente',
+            mensaje: 'Reserva y pago de seña exitoso',
             id_reserva: resultado.insertId,
             dias,
             costo_estimado,
+            monto_seña
         });
     } catch (error) {
         console.error(error);
@@ -139,7 +143,6 @@ exports.actualizarEstadoReserva = async (req, res) => {
 
         await db.execute('UPDATE reserva SET estado = ? WHERE id_reserva = ?', [estado, id]);
 
-        // Mantener sincronizado el estado de la maquinaria.
         if (estado === 'Confirmada') {
             await db.execute("UPDATE maquinaria SET estado = 'Rentado' WHERE id_maquinaria = ?", [existe[0].id_maquinaria]);
         } else if (estado === 'Cancelada' || estado === 'Rechazada') {
@@ -175,7 +178,6 @@ exports.crearValoracion = async (req, res) => {
             return res.status(400).json({ error: 'La puntuación debe ser un número entero entre 1 y 5' });
         }
 
-        // El proveedor se obtiene desde la maquinaria de la reserva, no desde el cliente.
         const [reservas] = await db.execute(
             `SELECT r.id_reserva, r.id_productor, r.estado, m.id_proveedor
              FROM reserva r

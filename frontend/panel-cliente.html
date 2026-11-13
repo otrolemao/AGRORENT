@@ -17,18 +17,15 @@
     </header>
 
     <div class="container">
-        <!-- SISTEMA DE PESTAÑAS -->
         <div class="tabs-nav">
             <button class="tab-btn active" onclick="abrirTab(event, 'tab-catalogo')">Catálogo de Máquinas</button>
             <button class="tab-btn" onclick="abrirTab(event, 'tab-mis-reservas')">Mis Reservas</button>
         </div>
 
-        <!-- PESTAÑA 1: CATÁLOGO -->
         <div id="tab-catalogo" class="tab-content active">
             <div class="card">
                 <h2>Maquinaria Disponible</h2>
                 
-                <!-- Barra de Búsqueda Estilizada -->
                 <div style="display: flex; gap: 15px; margin-bottom: 30px;">
                     <input type="text" id="inputBusqueda" placeholder="Buscar por marca, modelo o descripción..." style="flex: 1;">
                     <button class="btn" onclick="cargarMaquinaria()">Buscar</button>
@@ -49,7 +46,6 @@
             </div>
         </div>
 
-        <!-- PESTAÑA 2: MIS RESERVAS -->
         <div id="tab-mis-reservas" class="tab-content">
             <div class="card">
                 <h2>Mi Historial de Reservas</h2>
@@ -71,7 +67,6 @@
     </div>
 
     <script>
-        // 1. VALIDACIÓN DE SESIÓN
         const usuarioGuardado = JSON.parse(localStorage.getItem('agrorent_usuario'));
         const idProductor = usuarioGuardado ? usuarioGuardado.id_productor : null;
         
@@ -87,7 +82,6 @@
             window.location.href = 'index.html';
         }
 
-        // 2. LÓGICA DE PESTAÑAS
         function abrirTab(evt, tabName) {
             let tabcontent = document.getElementsByClassName("tab-content");
             for (let i = 0; i < tabcontent.length; i++) {
@@ -101,7 +95,6 @@
             evt.currentTarget.classList.add("active");
         }
 
-        // 3. CARGAR DATOS AL INICIAR
         document.addEventListener('DOMContentLoaded', () => {
             cargarMaquinaria();
             cargarMisReservas();
@@ -110,7 +103,6 @@
             });
         });
 
-        // 4. LÓGICA DE MAQUINARIA (Original)
         async function cargarMaquinaria() {
             try {
                 const busqueda = document.getElementById('inputBusqueda').value;
@@ -145,7 +137,6 @@
             }
         }
 
-        // 5. LÓGICA DE RESERVAS (Original)
         async function cargarMisReservas() {
             try {
                 const respuesta = await fetch(`/api/reservas?id_productor=${encodeURIComponent(idProductor)}`);
@@ -162,7 +153,7 @@
                 reservas.forEach(reserva => {
                     let colorEstado = '#212529';
                     if (reserva.estado === 'Pendiente') colorEstado = '#f39c12';
-                    if (reserva.estado === 'Confirmada') colorEstado = '#07503f'; // Verde Arva
+                    if (reserva.estado === 'Confirmada') colorEstado = '#07503f'; 
                     if (reserva.estado === 'Cancelada') colorEstado = '#dc3545';
 
                     let botonValorar = '-';
@@ -186,13 +177,12 @@
             }
         }
 
-        // 6. MODAL DE RESERVA
         window.abrirModalReserva = (id_maquinaria, nombre_maquina) => {
             const modalHTML = `
                 <div class="modal-overlay" id="modalReserva">
                     <div class="modal-content" style="text-align: left;">
                         <h3 style="font-family: var(--font-serif); font-size: 28px; margin-bottom: 10px;">Reservar Maquinaria</h3>
-                        <p style="color: #6d6d6d; margin-bottom: 25px;">Estás reservando: <strong style="color: var(--color-charcoal);">${nombre_maquina}</strong></p>
+                        <p style="color: #6d6d6d; margin-bottom: 25px;">Máquina: <strong style="color: var(--color-charcoal);">${nombre_maquina}</strong></p>
                         
                         <div style="margin-bottom: 20px;">
                             <label>Fecha de inicio:</label>
@@ -202,10 +192,22 @@
                             <label>Fecha de término:</label>
                             <input type="date" id="fecha_fin" required>
                         </div>
+
+                        <div style="background: var(--color-bone); padding: 15px; border-radius: 10px; margin-bottom: 20px;">
+                            <p style="font-size: 14px; margin: 0; color: #353535;">
+                                <strong>Política de reserva:</strong><br>
+                                Para asegurar la máquina, debes pagar una seña del <strong>20%</strong>. El resto se paga al finalizar el arriendo.
+                            </p>
+                        </div>
+
+                        <div style="margin-bottom: 25px; display: flex; align-items: center; gap: 10px;">
+                            <input type="checkbox" id="aceptoTerminos" style="width: 20px; height: 20px; cursor: pointer;">
+                            <label for="aceptoTerminos" style="margin: 0; cursor: pointer; font-size: 14px; font-weight: normal;">Acepto los términos y el pago de la seña.</label>
+                        </div>
                         
                         <div class="modal-buttons">
                             <button class="btn-secondary" onclick="cerrarModal('modalReserva')">Cancelar</button>
-                            <button class="btn" id="btnConfirmarReserva">Solicitar Reserva</button>
+                            <button class="btn" id="btnConfirmarReserva" disabled style="opacity: 0.5;">Pagar Seña y Reservar</button>
                         </div>
                     </div>
                 </div>
@@ -215,7 +217,16 @@
             const modal = document.getElementById('modalReserva');
             setTimeout(() => modal.classList.add('show'), 10);
 
-            document.getElementById('btnConfirmarReserva').onclick = async () => {
+            const checkbox = document.getElementById('aceptoTerminos');
+            const btnPagar = document.getElementById('btnConfirmarReserva');
+
+            checkbox.addEventListener('change', (e) => {
+                btnPagar.disabled = !e.target.checked;
+                btnPagar.style.opacity = e.target.checked ? '1' : '0.5';
+                btnPagar.style.cursor = e.target.checked ? 'pointer' : 'not-allowed';
+            });
+
+            btnPagar.onclick = async () => {
                 const fecha_inicio = document.getElementById('fecha_inicio').value;
                 const fecha_fin = document.getElementById('fecha_fin').value;
 
@@ -224,34 +235,43 @@
                     return;
                 }
 
-                try {
-                    const respuesta = await fetch('/api/reservas', {
-                        method: 'POST',
-                        headers: { 'Content-Type': 'application/json' },
-                        body: JSON.stringify({
-                            id_productor: idProductor,
-                            id_maquinaria: id_maquinaria,
-                            fecha_inicio: fecha_inicio,
-                            fecha_fin: fecha_fin
-                        })
-                    });
+                btnPagar.innerText = 'Procesando pago...';
+                btnPagar.disabled = true;
 
-                    if (respuesta.ok) {
-                        mostrarToast('¡Reserva solicitada con éxito!', 'success');
-                        cerrarModal('modalReserva');
-                        cargarMisReservas();
-                    } else {
-                        const data = await respuesta.json();
-                        mostrarToast(data.error || 'Error al reservar', 'error');
+                setTimeout(async () => {
+                    try {
+                        const respuesta = await fetch('/api/reservas', {
+                            method: 'POST',
+                            headers: { 'Content-Type': 'application/json' },
+                            body: JSON.stringify({
+                                id_productor: idProductor,
+                                id_maquinaria: id_maquinaria,
+                                fecha_inicio: fecha_inicio,
+                                fecha_fin: fecha_fin
+                            })
+                        });
+
+                        if (respuesta.ok) {
+                            const data = await respuesta.json();
+                            mostrarToast(`¡Pago de seña exitoso! Se abonaron $${data.monto_seña.toLocaleString('es-CL')}`, 'success');
+                            cerrarModal('modalReserva');
+                            cargarMisReservas();
+                        } else {
+                            const data = await respuesta.json();
+                            mostrarToast(data.error || 'Error al reservar', 'error');
+                            btnPagar.innerText = 'Pagar Seña y Reservar';
+                            btnPagar.disabled = false;
+                        }
+                    } catch (error) {
+                        console.error(error);
+                        mostrarToast('Error de conexión al reservar', 'error');
+                        btnPagar.innerText = 'Pagar Seña y Reservar';
+                        btnPagar.disabled = false;
                     }
-                } catch (error) {
-                    console.error(error);
-                    mostrarToast('Error de conexión al reservar', 'error');
-                }
+                }, 1500);
             };
         };
 
-        // 7. MODAL DE VALORACIÓN
         window.abrirModalValoracion = (id_reserva, id_proveedor) => {
             const modalHTML = `
                 <div class="modal-overlay" id="modalValoracion">
@@ -318,7 +338,6 @@
             };
         };
 
-        // 8. UTILIDADES
         window.cerrarModal = (idModal) => {
             const modal = document.getElementById(idModal);
             if (modal) {
@@ -331,9 +350,7 @@
             const toast = document.createElement('div');
             toast.className = `toast ${tipo}`;
             toast.innerText = mensaje;
-            
             document.body.appendChild(toast);
-            
             setTimeout(() => { toast.classList.add('show'); }, 10);
             setTimeout(() => {
                 toast.classList.remove('show');

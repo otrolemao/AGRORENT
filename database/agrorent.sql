@@ -107,7 +107,7 @@ CREATE TABLE disponibilidad (
 );
 
 -- ============================================
--- TABLA: reserva
+-- TABLA: reserva (CON CAMPOS DE PAGO DE SEÑA)
 -- ============================================
 CREATE TABLE reserva (
     id_reserva INT AUTO_INCREMENT PRIMARY KEY,
@@ -117,6 +117,8 @@ CREATE TABLE reserva (
     fecha_fin DATE NOT NULL,
     estado ENUM('Pendiente', 'Confirmada', 'Cancelada', 'Completada') DEFAULT 'Pendiente',
     costo_estimado DECIMAL(10,2),
+    monto_seña DECIMAL(10,2) DEFAULT 0,                 -- NUEVO CAMPO
+    estado_pago ENUM('Pendiente', 'Pagado') DEFAULT 'Pendiente', -- NUEVO CAMPO
     fecha_creacion DATETIME DEFAULT CURRENT_TIMESTAMP,
     FOREIGN KEY (id_productor) REFERENCES productor(id_productor),
     FOREIGN KEY (id_maquinaria) REFERENCES maquinaria(id_maquinaria)
@@ -214,11 +216,10 @@ CREATE TABLE sesion (
 );
 
 -- ============================================
--- DATOS DE PRUEBA (Usuarios y Roles)
+-- DATOS DE PRUEBA
 -- ============================================
 
 -- Usuarios de prueba. Contraseña de todos: agrorent123
--- Los hashes son bcrypt reales (el login usa bcrypt.compare).
 INSERT INTO usuario (nombre, email, password, telefono, rut, id_rol) VALUES
 ('Jorge Muñoz', 'jorge@agroma.cl', '$2b$10$oo33ohbJXz3Vsl7EeM012uI4FXf11tSIX7LPX.137uAzn63DfhTw6', '+56912345678', '11.111.111-1', 2),
 ('María González', 'maria@productor.cl', '$2b$10$w66/xuzuLAXHRk1bAFNpQO.ydo8wOU7pZpJXzjFOZEO6KNOSL/tl6', '+56923456789', '22.222.222-2', 1),
@@ -237,9 +238,10 @@ INSERT INTO maquinaria (id_proveedor, id_categoria, marca, modelo, anio, patente
 (1, 2, 'Vaderstad', 'Rapid 400S', 2019, 'CD5678', 250000, 'Disponible', 'Sembradora de siembra directa'),
 (1, 3, 'Claas', 'Lexion 5300', 2021, 'EF9012', 500000, 'Rentado', 'Cosechadora de alto rendimiento');
 
-INSERT INTO reserva (id_productor, id_maquinaria, fecha_inicio, fecha_fin, estado, costo_estimado) VALUES
-(1, 1, '2026-11-01', '2026-11-05', 'Confirmada', 750000),
-(2, 2, '2026-11-10', '2026-11-12', 'Pendiente', 500000);
+-- Reservas de prueba (Ahora con monto_seña y estado_pago)
+INSERT INTO reserva (id_productor, id_maquinaria, fecha_inicio, fecha_fin, estado, costo_estimado, monto_seña, estado_pago) VALUES
+(1, 1, '2026-11-01', '2026-11-05', 'Confirmada', 750000, 150000, 'Pagado'),
+(2, 2, '2026-11-10', '2026-11-12', 'Pendiente', 500000, 100000, 'Pagado');
 
 INSERT INTO renta (id_reserva, fecha_entrega, estado) VALUES
 (1, '2026-11-01 08:00:00', 'En uso');
