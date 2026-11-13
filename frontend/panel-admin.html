@@ -6,63 +6,111 @@
     <title>AgroRent - Panel de Administración</title>
     <link rel="stylesheet" href="styles.css">
     <style>
-        .header-admin {
-            display: flex;
-            justify-content: space-between;
-            align-items: center;
-            padding: 0 20px;
-            flex-wrap: wrap;
-            gap: 10px;
+        /* Estilos específicos para el Dashboard */
+        .metricas-grid {
+            display: grid;
+            grid-template-columns: repeat(auto-fit, minmax(240px, 1fr));
+            gap: 25px;
+            margin-top: 40px;
         }
-        .header-admin .usuario { margin-right: 15px; font-weight: bold; }
-        .btn-logout {
-            background-color: #e74c3c;
+
+        .metrica-card {
+            background-color: var(--color-pure-white);
+            border-radius: var(--radius-card);
+            padding: 35px 30px;
+            text-align: left;
+            border: none;
+            position: relative;
+            overflow: hidden;
+            transition: var(--transition-smooth);
+            animation: scaleIn 0.6s cubic-bezier(0.16, 1, 0.3, 1) forwards;
+            opacity: 0;
+        }
+
+        /* Animación de entrada para las tarjetas */
+        @keyframes scaleIn {
+            0% { opacity: 0; transform: scale(0.95) translateY(20px); }
+            100% { opacity: 1; transform: scale(1) translateY(0); }
+        }
+
+        .metrica-card:hover {
+            transform: translateY(-5px);
+            box-shadow: 0 20px 40px rgba(0,0,0,0.06);
+        }
+
+        .metrica-card h3 {
+            font-family: var(--font-sans);
+            font-size: 13px;
+            font-weight: 600;
+            text-transform: uppercase;
+            letter-spacing: 1.5px;
+            color: #6d6d6d;
+            margin-bottom: 15px;
+        }
+
+        .metrica-card p {
+            font-family: var(--font-serif);
+            font-size: 48px;
+            font-weight: 400;
+            color: var(--color-charcoal);
+            margin: 0;
+            line-height: 1;
+        }
+
+        /* Colores pastel de Arva para las tarjetas */
+        .card-sage { background-color: var(--color-sage-card); }
+        .card-peach { background-color: var(--color-peach-card); }
+        .card-sky { background-color: var(--color-sky-card); }
+        .card-forest { 
+            background-color: var(--color-forest-ink); 
             color: white;
-            text-decoration: none;
-            padding: 8px 15px;
-            border-radius: 5px;
-            font-weight: bold;
-            transition: background-color 0.3s;
         }
-        .btn-logout:hover { background-color: #c0392b; }
-        .metricas { display: flex; gap: 20px; margin-top: 20px; flex-wrap: wrap; }
-        .metrica {
-            flex: 1;
-            min-width: 180px;
-            background: #ecf0f1;
-            padding: 20px;
-            border-radius: 8px;
-            text-align: center;
-        }
-        .metrica p { font-size: 24px; font-weight: bold; color: #2c3e50; margin: 8px 0 0; }
+        
+        .card-forest h3 { color: rgba(255,255,255,0.7); }
+        .card-forest p { color: white; }
+
+        /* Retraso para que aparezcan una tras otra */
+        .metrica-card:nth-child(1) { animation-delay: 0.1s; }
+        .metrica-card:nth-child(2) { animation-delay: 0.2s; }
+        .metrica-card:nth-child(3) { animation-delay: 0.3s; }
+        .metrica-card:nth-child(4) { animation-delay: 0.4s; }
     </style>
 </head>
 <body>
-    <header class="header-admin">
-        <h1>AgroRent - Panel de Administración</h1>
-        <div>
-            <span class="usuario" id="nombreUsuario"></span>
-            <a href="#" id="btnSalir" class="btn-logout">Cerrar Sesión</a>
+
+    <header>
+        <h1>AgroRent</h1>
+        <div class="header-user">
+            <span id="nombreUsuario">Cargando...</span>
+            <a href="#" class="btn-logout" onclick="cerrarSesion(event)">Cerrar Sesión</a>
         </div>
     </header>
 
-    <div class="container">
-        <h2>Métricas del Sistema</h2>
+    <div class="container" style="animation: slideUpFade 0.5s ease;">
+        <h2>Resumen del Sistema</h2>
+        <p style="color: #6d6d6d; font-size: 16px;">Métricas globales de la plataforma AgroRent en tiempo real.</p>
 
-        <div class="metricas">
-            <div class="metrica">
+        <div class="metricas-grid">
+            <!-- Tarjeta 1: Usuarios -->
+            <div class="metrica-card card-sage">
                 <h3>Usuarios Registrados</h3>
                 <p id="totalUsuarios">-</p>
             </div>
-            <div class="metrica">
+            
+            <!-- Tarjeta 2: Maquinaria -->
+            <div class="metrica-card card-peach">
                 <h3>Maquinaria Registrada</h3>
                 <p id="totalMaquinas">-</p>
             </div>
-            <div class="metrica">
-                <h3>Reservas Confirmadas</h3>
+            
+            <!-- Tarjeta 3: Reservas -->
+            <div class="metrica-card card-sky">
+                <h3>Reservas Activas</h3>
                 <p id="totalReservas">-</p>
             </div>
-            <div class="metrica">
+            
+            <!-- Tarjeta 4: Ingresos -->
+            <div class="metrica-card card-forest">
                 <h3>Ingresos Confirmados</h3>
                 <p id="totalIngresos">-</p>
             </div>
@@ -70,6 +118,7 @@
     </div>
 
     <script>
+        // 1. VALIDACIÓN DE SESIÓN Y ROL ADMIN
         const usuario = (() => {
             try { return JSON.parse(localStorage.getItem('agrorent_usuario')); }
             catch (e) { return null; }
@@ -78,17 +127,20 @@
         if (!usuario || usuario.rol !== 3) {
             window.location.href = 'index.html';
         } else {
-            document.getElementById('nombreUsuario').textContent = usuario.nombre;
+            document.getElementById('nombreUsuario').innerText = usuario.nombre;
+            
             document.getElementById('btnSalir').addEventListener('click', (e) => {
                 e.preventDefault();
                 localStorage.removeItem('agrorent_usuario');
                 window.location.href = 'index.html';
             });
 
+            // Cargar métricas al iniciar
             document.addEventListener('DOMContentLoaded', cargarMetricas);
             if (document.readyState !== 'loading') cargarMetricas();
         }
 
+        // 2. LÓGICA DE MÉTRICAS
         async function cargarMetricas() {
             try {
                 const respuesta = await fetch('/api/admin/metricas');
@@ -96,14 +148,40 @@
 
                 const data = await respuesta.json();
 
-                document.getElementById('totalUsuarios').innerText = data.usuarios_registrados;
-                document.getElementById('totalMaquinas').innerText = data.maquinaria_registrada;
-                document.getElementById('totalReservas').innerText = data.reservas_activas;
+                // Animación de conteo para que se vea más profesional
+                animarNumero('totalUsuarios', data.usuarios_registrados);
+                animarNumero('totalMaquinas', data.maquinaria_registrada);
+                animarNumero('totalReservas', data.reservas_activas);
+                
+                // Formatear ingresos a moneda chilena
                 document.getElementById('totalIngresos').innerText =
                     '$' + Number(data.ingresos_estimados).toLocaleString('es-CL');
+
             } catch (error) {
                 console.error('Error al cargar métricas', error);
             }
+        }
+
+        // Función para animar los números del 0 al valor real
+        function animarNumero(idElemento, valorFinal) {
+            const elemento = document.getElementById(idElemento);
+            let valorActual = 0;
+            const duracion = 1000; // 1 segundo
+            const pasos = 30;
+            const incremento = valorFinal / pasos;
+            
+            let pasoActual = 0;
+            const intervalo = setInterval(() => {
+                pasoActual++;
+                valorActual += incremento;
+                
+                if (pasoActual >= pasos) {
+                    elemento.innerText = valorFinal;
+                    clearInterval(intervalo);
+                } else {
+                    elemento.innerText = Math.floor(valorActual);
+                }
+            }, duracion / pasos);
         }
     </script>
 </body>

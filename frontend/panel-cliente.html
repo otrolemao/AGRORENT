@@ -5,106 +5,76 @@
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <title>AgroRent - Catálogo de Maquinaria</title>
     <link rel="stylesheet" href="styles.css">
-    <style>
-        .header-cliente {
-            display: flex;
-            justify-content: space-between;
-            align-items: center;
-            padding: 0 20px;
-        }
-        .btn-logout {
-            background-color: #e74c3c;
-            color: white;
-            text-decoration: none;
-            padding: 8px 15px;
-            border-radius: 5px;
-            font-weight: bold;
-            transition: background-color 0.3s;
-        }
-        .btn-logout:hover { background-color: #c0392b; }
-        
-        .toast {
-            position: fixed; top: 20px; right: 20px; padding: 15px 25px;
-            border-radius: 8px; color: white; font-weight: bold;
-            box-shadow: 0 4px 12px rgba(0,0,0,0.15); z-index: 1000;
-            opacity: 0; transform: translateY(-20px); transition: opacity 0.3s, transform 0.3s;
-        }
-        .toast.show { opacity: 1; transform: translateY(0); }
-        .toast.success { background-color: #27ae60; }
-        .toast.error { background-color: #e74c3c; }
-        
-        .modal-overlay {
-            position: fixed; top: 0; left: 0; width: 100%; height: 100%;
-            background: rgba(0, 0, 0, 0.5); display: flex; justify-content: center; align-items: center;
-            z-index: 2000; opacity: 0; transition: opacity 0.3s;
-        }
-        .modal-overlay.show { opacity: 1; }
-        .modal-content {
-            background: white; padding: 30px; border-radius: 8px; max-width: 400px; width: 100%;
-            text-align: center; box-shadow: 0 4px 15px rgba(0,0,0,0.2); transform: scale(0.9); transition: transform 0.3s;
-        }
-        .modal-overlay.show .modal-content { transform: scale(1); }
-        .modal-content h3 { margin-top: 0; color: #2c3e50; }
-        .modal-buttons { margin-top: 25px; display: flex; justify-content: center; gap: 15px; }
-        .btn-secondary { background-color: #95a5a6; color: white; border: none; padding: 10px 20px; border-radius: 5px; cursor: pointer; }
-        .estado-pendiente { color: #f39c12; font-weight: bold; }
-        .estado-confirmada { color: #27ae60; font-weight: bold; }
-        .estado-cancelada { color: #e74c3c; font-weight: bold; }
-    </style>
 </head>
 <body>
-    <header class="header-cliente">
-        <h1>AgroRent - Catálogo de Maquinaria</h1>
-        <div style="display: flex; align-items: center; gap: 15px;">
-            <span id="nombreUsuario" style="font-weight: bold; color: white;"></span>
+
+    <header>
+        <h1>AgroRent</h1>
+        <div class="header-user">
+            <span id="nombreUsuario">Cargando...</span>
             <a href="#" class="btn-logout" onclick="cerrarSesion(event)">Cerrar Sesión</a>
         </div>
     </header>
 
     <div class="container">
-        <h2>Máquinas Disponibles para Arriendo</h2>
-        
-        <div style="margin-bottom: 20px; display: flex; gap: 10px;">
-            <input type="text" id="inputBusqueda" placeholder="Buscar por marca, modelo o descripción..." style="flex: 1; padding: 10px; border: 1px solid #ccc; border-radius: 4px;">
-            <button class="btn" onclick="cargarMaquinaria()" style="background-color: #27ae60;">Buscar</button>
+        <!-- SISTEMA DE PESTAÑAS -->
+        <div class="tabs-nav">
+            <button class="tab-btn active" onclick="abrirTab(event, 'tab-catalogo')">Catálogo de Máquinas</button>
+            <button class="tab-btn" onclick="abrirTab(event, 'tab-mis-reservas')">Mis Reservas</button>
         </div>
 
-        <table id="tablaMaquinaria">
-            <thead>
-                <tr>
-                    <th>Marca</th>
-                    <th>Modelo</th>
-                    <th>Precio/Día</th>
-                    <th>Descripción</th>
-                    <th>Acción</th>
-                </tr>
-            </thead>
-            <tbody>
-            </tbody>
-        </table>
+        <!-- PESTAÑA 1: CATÁLOGO -->
+        <div id="tab-catalogo" class="tab-content active">
+            <div class="card">
+                <h2>Maquinaria Disponible</h2>
+                
+                <!-- Barra de Búsqueda Estilizada -->
+                <div style="display: flex; gap: 15px; margin-bottom: 30px;">
+                    <input type="text" id="inputBusqueda" placeholder="Buscar por marca, modelo o descripción..." style="flex: 1;">
+                    <button class="btn" onclick="cargarMaquinaria()">Buscar</button>
+                </div>
 
-        <hr style="margin: 30px 0;">
+                <table id="tablaMaquinaria">
+                    <thead>
+                        <tr>
+                            <th>Marca</th>
+                            <th>Modelo</th>
+                            <th>Precio/Día</th>
+                            <th>Descripción</th>
+                            <th>Acción</th>
+                        </tr>
+                    </thead>
+                    <tbody></tbody>
+                </table>
+            </div>
+        </div>
 
-        <h2>Mis Reservas</h2>
-        <table id="tablaMisReservas">
-            <thead>
-                <tr>
-                    <th>ID Reserva</th>
-                    <th>Máquina</th>
-                    <th>Fechas</th>
-                    <th>Costo</th>
-                    <th>Estado</th>
-                    <th>Acción</th>
-                </tr>
-            </thead>
-            <tbody>
-            </tbody>
-        </table>
+        <!-- PESTAÑA 2: MIS RESERVAS -->
+        <div id="tab-mis-reservas" class="tab-content">
+            <div class="card">
+                <h2>Mi Historial de Reservas</h2>
+                <table id="tablaMisReservas">
+                    <thead>
+                        <tr>
+                            <th>ID Reserva</th>
+                            <th>Máquina</th>
+                            <th>Fechas</th>
+                            <th>Costo</th>
+                            <th>Estado</th>
+                            <th>Acción</th>
+                        </tr>
+                    </thead>
+                    <tbody></tbody>
+                </table>
+            </div>
+        </div>
     </div>
 
     <script>
+        // 1. VALIDACIÓN DE SESIÓN
         const usuarioGuardado = JSON.parse(localStorage.getItem('agrorent_usuario'));
         const idProductor = usuarioGuardado ? usuarioGuardado.id_productor : null;
+        
         if (!idProductor) {
             window.location.href = 'index.html';
         } else if (usuarioGuardado.nombre) {
@@ -117,6 +87,21 @@
             window.location.href = 'index.html';
         }
 
+        // 2. LÓGICA DE PESTAÑAS
+        function abrirTab(evt, tabName) {
+            let tabcontent = document.getElementsByClassName("tab-content");
+            for (let i = 0; i < tabcontent.length; i++) {
+                tabcontent[i].classList.remove("active");
+            }
+            let tablinks = document.getElementsByClassName("tab-btn");
+            for (let i = 0; i < tablinks.length; i++) {
+                tablinks[i].classList.remove("active");
+            }
+            document.getElementById(tabName).classList.add("active");
+            evt.currentTarget.classList.add("active");
+        }
+
+        // 3. CARGAR DATOS AL INICIAR
         document.addEventListener('DOMContentLoaded', () => {
             cargarMaquinaria();
             cargarMisReservas();
@@ -125,6 +110,7 @@
             });
         });
 
+        // 4. LÓGICA DE MAQUINARIA (Original)
         async function cargarMaquinaria() {
             try {
                 const busqueda = document.getElementById('inputBusqueda').value;
@@ -136,10 +122,15 @@
                 const tbody = document.querySelector('#tablaMaquinaria tbody');
                 tbody.innerHTML = ''; 
 
+                if (maquinas.length === 0) {
+                    tbody.innerHTML = '<tr><td colspan="5" style="text-align: center; color: #6d6d6d;">No se encontraron máquinas disponibles.</td></tr>';
+                    return;
+                }
+
                 maquinas.forEach(maquina => {
                     const fila = document.createElement('tr');
                     fila.innerHTML = `
-                        <td>${maquina.marca}</td>
+                        <td><strong>${maquina.marca}</strong></td>
                         <td>${maquina.modelo}</td>
                         <td>$${maquina.precio_dia}</td>
                         <td>${maquina.descripcion}</td>
@@ -154,6 +145,7 @@
             }
         }
 
+        // 5. LÓGICA DE RESERVAS (Original)
         async function cargarMisReservas() {
             try {
                 const respuesta = await fetch(`/api/reservas?id_productor=${encodeURIComponent(idProductor)}`);
@@ -163,28 +155,28 @@
                 tbody.innerHTML = ''; 
 
                 if (reservas.length === 0) {
-                    tbody.innerHTML = '<tr><td colspan="6" style="text-align: center;">No tienes reservas registradas.</td></tr>';
+                    tbody.innerHTML = '<tr><td colspan="6" style="text-align: center; color: #6d6d6d;">No tienes reservas registradas.</td></tr>';
                     return;
                 }
 
                 reservas.forEach(reserva => {
-                    let colorEstado = 'black';
+                    let colorEstado = '#212529';
                     if (reserva.estado === 'Pendiente') colorEstado = '#f39c12';
-                    if (reserva.estado === 'Confirmada') colorEstado = '#27ae60';
-                    if (reserva.estado === 'Cancelada') colorEstado = '#e74c3c';
+                    if (reserva.estado === 'Confirmada') colorEstado = '#07503f'; // Verde Arva
+                    if (reserva.estado === 'Cancelada') colorEstado = '#dc3545';
 
                     let botonValorar = '-';
                     if (reserva.estado === 'Confirmada') {
-                        botonValorar = `<button class="btn" style="background-color: #f39c12;" onclick="abrirModalValoracion(${reserva.id_reserva}, ${reserva.id_proveedor})">Valorar</button>`;
+                        botonValorar = `<button class="btn" style="padding: 8px 16px; font-size: 13px;" onclick="abrirModalValoracion(${reserva.id_reserva}, ${reserva.id_proveedor})">Valorar</button>`;
                     }
 
                     const fila = document.createElement('tr');
                     fila.innerHTML = `
-                        <td>${reserva.id_reserva}</td>
-                        <td>${reserva.marca} ${reserva.modelo}</td>
+                        <td>#${reserva.id_reserva}</td>
+                        <td><strong>${reserva.marca} ${reserva.modelo}</strong></td>
                         <td>${reserva.fecha_inicio.substring(0,10)} al ${reserva.fecha_fin.substring(0,10)}</td>
                         <td>$${reserva.costo_estimado}</td>
-                        <td style="color: ${colorEstado}; font-weight: bold;">${reserva.estado}</td>
+                        <td style="color: ${colorEstado}; font-weight: 600;">${reserva.estado}</td>
                         <td>${botonValorar}</td>
                     `;
                     tbody.appendChild(fila);
@@ -194,18 +186,23 @@
             }
         }
 
+        // 6. MODAL DE RESERVA
         window.abrirModalReserva = (id_maquinaria, nombre_maquina) => {
             const modalHTML = `
                 <div class="modal-overlay" id="modalReserva">
-                    <div class="modal-content">
-                        <h3>Reservar Maquinaria</h3>
-                        <p>Estás reservando: <strong>${nombre_maquina}</strong></p>
-                        <div style="margin-top: 20px; text-align: left;">
+                    <div class="modal-content" style="text-align: left;">
+                        <h3 style="font-family: var(--font-serif); font-size: 28px; margin-bottom: 10px;">Reservar Maquinaria</h3>
+                        <p style="color: #6d6d6d; margin-bottom: 25px;">Estás reservando: <strong style="color: var(--color-charcoal);">${nombre_maquina}</strong></p>
+                        
+                        <div style="margin-bottom: 20px;">
                             <label>Fecha de inicio:</label>
-                            <input type="date" id="fecha_inicio" required style="width: 100%; padding: 8px; margin-bottom: 15px;">
-                            <label>Fecha de término:</label>
-                            <input type="date" id="fecha_fin" required style="width: 100%; padding: 8px;">
+                            <input type="date" id="fecha_inicio" required>
                         </div>
+                        <div style="margin-bottom: 20px;">
+                            <label>Fecha de término:</label>
+                            <input type="date" id="fecha_fin" required>
+                        </div>
+                        
                         <div class="modal-buttons">
                             <button class="btn-secondary" onclick="cerrarModal('modalReserva')">Cancelar</button>
                             <button class="btn" id="btnConfirmarReserva">Solicitar Reserva</button>
@@ -254,18 +251,23 @@
             };
         };
 
+        // 7. MODAL DE VALORACIÓN
         window.abrirModalValoracion = (id_reserva, id_proveedor) => {
             const modalHTML = `
                 <div class="modal-overlay" id="modalValoracion">
-                    <div class="modal-content">
-                        <h3>Valorar Proveedor</h3>
-                        <p>¿Cómo fue tu experiencia con esta máquina?</p>
-                        <div style="margin-top: 20px; text-align: left;">
+                    <div class="modal-content" style="text-align: left;">
+                        <h3 style="font-family: var(--font-serif); font-size: 28px; margin-bottom: 10px;">Valorar Proveedor</h3>
+                        <p style="color: #6d6d6d; margin-bottom: 25px;">¿Cómo fue tu experiencia con esta máquina?</p>
+                        
+                        <div style="margin-bottom: 20px;">
                             <label>Puntuación (1 a 5):</label>
-                            <input type="number" id="puntuacion" min="1" max="5" required style="width: 100%; padding: 8px; margin-bottom: 15px;">
-                            <label>Comentario:</label>
-                            <textarea id="comentario" rows="3" style="width: 100%; padding: 8px;"></textarea>
+                            <input type="number" id="puntuacion" min="1" max="5" required placeholder="5">
                         </div>
+                        <div style="margin-bottom: 20px;">
+                            <label>Comentario:</label>
+                            <textarea id="comentario" rows="3" placeholder="Excelente servicio..."></textarea>
+                        </div>
+                        
                         <div class="modal-buttons">
                             <button class="btn-secondary" onclick="cerrarModal('modalValoracion')">Cancelar</button>
                             <button class="btn" id="btnEnviarValoracion">Enviar Valoración</button>
@@ -316,11 +318,12 @@
             };
         };
 
+        // 8. UTILIDADES
         window.cerrarModal = (idModal) => {
             const modal = document.getElementById(idModal);
             if (modal) {
                 modal.classList.remove('show');
-                setTimeout(() => modal.remove(), 300);
+                setTimeout(() => modal.remove(), 400);
             }
         };
 
@@ -331,13 +334,10 @@
             
             document.body.appendChild(toast);
             
-            setTimeout(() => {
-                toast.classList.add('show');
-            }, 10);
-
+            setTimeout(() => { toast.classList.add('show'); }, 10);
             setTimeout(() => {
                 toast.classList.remove('show');
-                setTimeout(() => toast.remove(), 300);
+                setTimeout(() => toast.remove(), 400);
             }, 3000);
         }
     </script>
