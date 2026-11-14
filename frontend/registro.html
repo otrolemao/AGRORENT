@@ -5,95 +5,64 @@
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <title>AgroRent - Registro de Usuario</title>
     <link rel="stylesheet" href="styles.css">
-    <style>
-        .registro-container {
-            max-width: 450px;
-            margin: 50px auto;
-            background: white;
-            padding: 30px;
-            border-radius: 8px;
-            box-shadow: 0 4px 15px rgba(0,0,0,0.2);
-        }
-        .registro-container h2 { 
-            text-align: center; 
-            color: #2c3e50; 
-        }
-        .registro-container input, .registro-container select {
-            width: 100%;
-            padding: 10px;
-            margin-top: 5px;
-            border: 1px solid #ccc;
-            border-radius: 4px;
-            box-sizing: border-box;
-            font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif;
-        }
-        
-        .toast {
-            position: fixed;
-            top: 20px;
-            right: 20px;
-            padding: 15px 25px;
-            border-radius: 8px;
-            color: white;
-            font-weight: bold;
-            box-shadow: 0 4px 12px rgba(0,0,0,0.15);
-            z-index: 1000;
-            opacity: 0;
-            transform: translateY(-20px);
-            transition: opacity 0.3s, transform 0.3s;
-        }
-        .toast.show { opacity: 1; transform: translateY(0); }
-        .toast.success { background-color: #27ae60; }
-        .toast.error { background-color: #e74c3c; }
-    </style>
 </head>
 <body>
     <header>
         <h1>AgroRent</h1>
     </header>
 
-    <div class="registro-container">
-        <h2>Crear Cuenta</h2>
-        <form id="registroForm">
-            <div style="margin-bottom: 15px;">
-                <label>Nombre Completo:</label>
-                <input type="text" id="nombre" required>
-            </div>
-            <div style="margin-bottom: 15px;">
-                <label>Correo Electrónico:</label>
-                <input type="email" id="email" required>
-            </div>
-            <div style="margin-bottom: 15px;">
-                <label>Contraseña:</label>
-                <input type="password" id="password" required minlength="6">
-            </div>
-            <div style="margin-bottom: 15px;">
-                <label>Teléfono:</label>
-                <input type="text" id="telefono" required>
-            </div>
-            <div style="margin-bottom: 15px;">
-                <label>RUT:</label>
-                <input type="text" id="rut" placeholder="Ej: 12.345.678-9" required>
-            </div>
-            <div style="margin-bottom: 15px;">
-                <label>¿Cuál es tu rol?</label>
-                <select id="rol" required>
-                    <option value="1">Productor Agrícola (Cliente)</option>
-                    <option value="2">Proveedor (Dueño de maquinaria)</option>
-                </select>
-            </div>
-            <button type="submit" class="btn" style="width: 100%;">Registrarse</button>
-        </form>
-        <p style="text-align: center; margin-top: 15px;">
-            <a href="index.html" style="color: #3498db; text-decoration: none;">¿Ya tienes cuenta? Inicia sesión aquí</a>
-        </p>
+    <div class="container" style="max-width: 500px; margin-top: 50px;">
+        <div class="card">
+            <h2 style="text-align: center; margin-bottom: 30px;">Crear Cuenta</h2>
+            
+            <form id="registroForm">
+                <div style="margin-bottom: 20px;">
+                    <label>Nombre Completo:</label>
+                    <input type="text" id="nombre" required maxlength="100" minlength="3" placeholder="Ej: Juan Pérez">
+                </div>
+                
+                <div style="margin-bottom: 20px;">
+                    <label>Correo Electrónico:</label>
+                    <input type="email" id="email" required maxlength="100" placeholder="correo@ejemplo.cl">
+                </div>
+                
+                <div style="margin-bottom: 20px;">
+                    <label>Contraseña:</label>
+                    <input type="password" id="password" required minlength="6" maxlength="50" placeholder="Mínimo 6 caracteres">
+                </div>
+                
+                <div style="margin-bottom: 20px;">
+                    <label>Teléfono:</label>
+                    <input type="text" id="telefono" required maxlength="20" placeholder="Ej: +56912345678">
+                </div>
+                
+                <div style="margin-bottom: 20px;">
+                    <label>RUT:</label>
+                    <!-- Validación con patrón chileno y largo máximo -->
+                    <input type="text" id="rut" placeholder="Ej: 12.345.678-9" required maxlength="12" pattern="[0-9]{1,2}\.?[0-9]{3}\.?[0-9]{3}-?[0-9kK]" title="Ingrese un RUT válido (Ej: 12.345.678-9)">
+                </div>
+                
+                <div style="margin-bottom: 30px;">
+                    <label>¿Cuál es tu rol?</label>
+                    <select id="rol" required>
+                        <option value="1">Productor Agrícola (Cliente)</option>
+                        <option value="2">Proveedor (Dueño de maquinaria)</option>
+                    </select>
+                </div>
+                
+                <button type="submit" class="btn" style="width: 100%;">Registrarse</button>
+            </form>
+            
+            <p style="text-align: center; margin-top: 20px;">
+                <a href="index.html" style="color: var(--color-forest-ink); text-decoration: none; font-weight: 500;">¿Ya tienes cuenta? Inicia sesión aquí</a>
+            </p>
+        </div>
     </div>
 
     <script>
         document.getElementById('registroForm').addEventListener('submit', async (e) => {
             e.preventDefault();
             
-            // Capturamos todos los datos, INCLUYENDO el RUT
             const nuevoUsuario = {
                 nombre: document.getElementById('nombre').value,
                 email: document.getElementById('email').value,
@@ -130,13 +99,8 @@
             const toast = document.createElement('div');
             toast.className = `toast ${tipo}`;
             toast.innerText = mensaje;
-            
             document.body.appendChild(toast);
-            
-            setTimeout(() => {
-                toast.classList.add('show');
-            }, 10);
-
+            setTimeout(() => { toast.classList.add('show'); }, 10);
             setTimeout(() => {
                 toast.classList.remove('show');
                 setTimeout(() => toast.remove(), 300);

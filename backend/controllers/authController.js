@@ -10,26 +10,53 @@ exports.registrarUsuario = async (req, res) => {
             return res.status(400).json({ error: 'Faltan datos obligatorios (incluyendo el RUT)' });
         }
 
+        // Validaciones de longitud y formato (no se puede confiar solo en el HTML)
+        const nombreTexto = String(nombre).trim();
+        const emailTexto = String(email).trim();
+        const rutTexto = String(rut).trim();
+        const passwordTexto = String(password);
+        const RUT_REGEX = /^[0-9]{1,2}\.?[0-9]{3}\.?[0-9]{3}-?[0-9kK]$/;
+
+        if (nombreTexto.length > 100) {
+            return res.status(400).json({ error: 'El nombre no puede superar los 100 caracteres' });
+        }
+
+        if (emailTexto.length > 100) {
+            return res.status(400).json({ error: 'El correo no puede superar los 100 caracteres' });
+        }
+
+        if (rutTexto.length > 12) {
+            return res.status(400).json({ error: 'El RUT no puede superar los 12 caracteres' });
+        }
+
+        if (!RUT_REGEX.test(rutTexto)) {
+            return res.status(400).json({ error: 'El formato del RUT no es válido (Ej: 12.345.678-9)' });
+        }
+
+        if (passwordTexto.length < 6) {
+            return res.status(400).json({ error: 'La contraseña debe tener al menos 6 caracteres' });
+        }
+
         // Verificar si el correo ya existe
-        const [existeEmail] = await db.query('SELECT * FROM usuario WHERE email = ?', [email]);
+        const [existeEmail] = await db.query('SELECT * FROM usuario WHERE email = ?', [emailTexto]);
         if (existeEmail.length > 0) {
             return res.status(400).json({ error: 'El correo ya está registrado' });
         }
 
         // Verificar si el RUT ya existe
-        const [existeRut] = await db.query('SELECT * FROM usuario WHERE rut = ?', [rut]);
+        const [existeRut] = await db.query('SELECT * FROM usuario WHERE rut = ?', [rutTexto]);
         if (existeRut.length > 0) {
             return res.status(400).json({ error: 'El RUT ya está registrado' });
         }
 
         // Encriptar la contraseña
         const salt = await bcrypt.genSalt(10);
-        const passwordHash = await bcrypt.hash(password, salt);
+        const passwordHash = await bcrypt.hash(passwordTexto, salt);
 
         // Insertar en la tabla usuario
         const [resultado] = await db.query(
             'INSERT INTO usuario (nombre, email, password, telefono, rut, id_rol) VALUES (?, ?, ?, ?, ?, ?)',
-            [nombre, email, passwordHash, telefono, rut, rol]
+            [nombreTexto, emailTexto, passwordHash, telefono, rutTexto, rol]
         );
 
         const nuevoUsuarioId = resultado.insertId;
