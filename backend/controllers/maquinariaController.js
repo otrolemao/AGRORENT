@@ -2,6 +2,64 @@ const db = require('../config/db');
 
 const ESTADOS_MAQUINARIA = ['Disponible', 'Rentado', 'Mantenimiento'];
 
+// Límites tomados del esquema de la BD (marca/modelo VARCHAR(50), patente VARCHAR(20))
+const ANIO_MINIMO = 1950;
+const PATENTE_REGEX = /^[A-Za-z]{4}-[0-9]{2,3}$/;
+
+// Valida solo los campos presentes (en las actualizaciones parciales los ausentes se conservan).
+// Devuelve el mensaje de error o null si todo está correcto.
+const validarDatosMaquinaria = ({ marca, modelo, anio, patente, descripcion }) => {
+    if (marca !== undefined && marca !== null) {
+        if (typeof marca !== 'string' || marca.trim().length === 0) {
+            return 'La marca es obligatoria y debe ser un texto';
+        }
+        if (marca.trim().length > 50) {
+            return 'La marca no puede superar los 50 caracteres';
+        }
+    }
+
+    if (modelo !== undefined && modelo !== null) {
+        if (typeof modelo !== 'string' || modelo.trim().length === 0) {
+            return 'El modelo es obligatorio y debe ser un texto';
+        }
+        if (modelo.trim().length > 50) {
+            return 'El modelo no puede superar los 50 caracteres';
+        }
+    }
+
+    const patenteTexto = patente === undefined || patente === null ? '' : String(patente).trim();
+    if (patenteTexto !== '') {
+        if (patenteTexto.length > 20) {
+            return 'La patente no puede superar los 20 caracteres';
+        }
+        if (!PATENTE_REGEX.test(patenteTexto)) {
+            return 'El formato de la patente no es válido (Ej: ABCD-12)';
+        }
+    }
+
+    if (descripcion !== undefined && descripcion !== null) {
+        if (typeof descripcion !== 'string') {
+            return 'La descripción debe ser un texto';
+        }
+        if (descripcion.trim().length > 250) {
+            return 'La descripción no puede superar los 250 caracteres';
+        }
+    }
+
+    if (anio !== undefined && anio !== null && anio !== '') {
+        const anioNumero = Number(anio);
+        const anioMaximo = new Date().getFullYear() + 1;
+        if (!Number.isInteger(anioNumero)) {
+            return 'El año debe ser un número entero';
+        }
+        if (anioNumero < ANIO_MINIMO || anioNumero > anioMaximo) {
+            return `El año debe estar entre ${ANIO_MINIMO} y ${anioMaximo}`;
+        }
+    }
+
+    return null;
+};
+
 exports.buscarMaquinaria = async (req, res) => {
     try {
         const { busqueda, id_proveedor, estado } = req.query;
@@ -77,12 +135,13 @@ exports.crearMaquinaria = async (req, res) => {
             return res.status(400).json({ error: 'Faltan campos obligatorios' });
         }
 
-        if (Number(precio_dia) <= 0) {
-            return res.status(400).json({ error: 'El precio por día debe ser mayor a cero' });
+        const errorValidacion = validarDatosMaquinaria({ marca, modelo, anio, patente, descripcion });
+        if (errorValidacion) {
+            return res.status(400).json({ error: errorValidacion });
         }
 
-        if (anio && (Number(anio) < 1950 || Number(anio) > new Date().getFullYear() + 1)) {
-            return res.status(400).json({ error: 'El año de la maquinaria no es válido' });
+        if (Number(precio_dia) <= 0) {
+            return res.status(400).json({ error: 'El precio por día debe ser mayor a cero' });
         }
 
         const [proveedor] = await db.execute('SELECT id_proveedor FROM proveedor WHERE id_proveedor = ?', [id_proveedor]);
@@ -132,6 +191,11 @@ exports.actualizarMaquinaria = async (req, res) => {
 
         if (estado && !ESTADOS_MAQUINARIA.includes(estado)) {
             return res.status(400).json({ error: `Estado inválido. Use: ${ESTADOS_MAQUINARIA.join(', ')}` });
+        }
+
+        const errorValidacion = validarDatosMaquinaria({ marca, modelo, anio, patente, descripcion });
+        if (errorValidacion) {
+            return res.status(400).json({ error: errorValidacion });
         }
 
         if (precio_dia !== undefined && Number(precio_dia) <= 0) {
