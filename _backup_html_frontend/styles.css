@@ -1,330 +1,264 @@
-@import url('https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600&family=Playfair+Display:ital,wght@0,400;0,600;1,400&display=swap');
+@import url('https://fonts.googleapis.com/css2?family=DM+Sans:wght@400;500;700&family=Plus+Jakarta+Sans:wght@500;600;700;800&family=JetBrains+Mono:wght@400;500&display=swap');
 
 :root {
-    /* Paleta Arva (Tierra y Campo) */
-    --color-forest-ink: #07503f;
-    --color-forest-hover: #05382b;
-    --color-bone: #f1efdf;
-    --color-pure-white: #ffffff;
-    --color-charcoal: #212529;
-    --color-sage-card: #e6ecd5;
-    --color-peach-card: #fceace;
-    --color-sky-card: #b2cee7;
-    --color-moss: #c3cda7;
-    --color-lime: #e8fe85;
-    
-    /* Tipografías (BMW + Arva) */
-    --font-sans: 'Inter', sans-serif;
-    --font-serif: 'Playfair Display', serif;
-    
-    /* Bordes */
-    --radius-pill: 100px;
-    --radius-card: 24px;
-    --radius-input: 33px;
-
-    /* Animaciones */
-    --transition-smooth: all 0.4s cubic-bezier(0.16, 1, 0.3, 1);
+  --bg-main: #08090a;
+  --bg-surface: #0f1011;
+  --bg-surface-hover: #141618;
+  --bg-input: #08090a;
+  --border-subtle: #23252a;
+  --border-focus: #3d414a;
+  --accent-lime: #e4f222;
+  --accent-lime-hover: #eef850;
+  --text-primary: #f4f5f7;
+  --text-secondary: #9da3ae;
+  --text-muted: #707580;
+  --font-display: 'Plus Jakarta Sans', sans-serif;
+  --font-body: 'DM Sans', sans-serif;
+  --font-mono: 'JetBrains Mono', monospace;
+  --radius-btn: 6px;
+  --radius-card: 12px;
+  --header-height: 64px;
+  --ease-out-expo: cubic-bezier(0.16, 1, 0.3, 1);
 }
 
-* {
-    box-sizing: border-box;
-    margin: 0;
-    padding: 0;
-}
+* { box-sizing: border-box; margin: 0; padding: 0; }
 
 body {
-    font-family: var(--font-sans);
-    background-color: var(--color-bone);
-    color: var(--color-charcoal);
-    line-height: 1.6;
-    -webkit-font-smoothing: antialiased;
+  background-color: var(--bg-main);
+  color: var(--text-primary);
+  font-family: var(--font-body);
+  font-size: 16px;
+  line-height: 1.6;
+  -webkit-font-smoothing: antialiased;
 }
 
-/* --- HEADER (Estilo Arva oscuro) --- */
+a { color: inherit; text-decoration: none; }
+
+/* Header Fijo */
 header {
-    background-color: var(--color-forest-ink);
-    color: var(--color-pure-white);
-    padding: 24px 50px;
-    display: flex;
-    justify-content: space-between;
-    align-items: center;
-    position: sticky;
-    top: 0;
-    z-index: 100;
-    box-shadow: 0 4px 20px rgba(7, 80, 63, 0.15);
+  position: fixed;
+  top: 0; left: 0; right: 0;
+  height: var(--header-height);
+  z-index: 50;
+  background-color: rgba(8, 9, 10, 0.85);
+  backdrop-filter: blur(12px);
+  border-bottom: 1px solid var(--border-subtle);
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  padding: 0 24px;
 }
 
 header h1 {
-    font-family: var(--font-serif);
-    font-weight: 400;
-    font-size: 32px;
-    letter-spacing: -0.5px;
+  font-family: var(--font-display);
+  font-size: 1.375rem;
+  font-weight: 800;
+  letter-spacing: -0.04em;
+  color: var(--text-primary);
 }
 
 .header-user {
-    display: flex;
-    align-items: center;
-    gap: 24px;
-    font-size: 15px;
-    font-weight: 300;
+  display: flex;
+  align-items: center;
+  gap: 16px;
+  font-size: 0.875rem;
+  color: var(--text-secondary);
 }
 
-.btn-logout {
-    background-color: var(--color-pure-white);
-    color: var(--color-forest-ink);
-    text-decoration: none;
-    padding: 12px 24px;
-    border-radius: var(--radius-pill);
-    font-weight: 500;
-    font-size: 14px;
-    transition: var(--transition-smooth);
-}
-
-.btn-logout:hover {
-    transform: translateY(-2px);
-    box-shadow: 0 6px 15px rgba(0,0,0,0.1);
-}
-
-/* --- CONTENEDOR PRINCIPAL --- */
+/* Contenedor */
 .container {
-    max-width: 1200px;
-    margin: 50px auto;
-    padding: 0 20px;
-    animation: fadeIn 0.8s ease-out;
+  max-width: 1200px;
+  margin: 0 auto;
+  padding: 0 24px;
 }
 
-/* --- SISTEMA DE PESTAÑAS (Tabs elegantes) --- */
-.tabs-nav {
-    display: flex;
-    gap: 15px;
-    margin-bottom: 40px;
-    border-bottom: 2px solid var(--color-moss);
-    padding-bottom: 15px;
+/* Hero Section (Estilo Linear) */
+.hero-section {
+  padding: 160px 0 80px;
+  background: radial-gradient(60% 55% at 78% 35%, rgba(228, 242, 34, 0.06) 0%, rgba(8, 9, 10, 0) 70%);
+  min-height: 80vh;
+  display: flex;
+  align-items: center;
 }
 
-.tab-btn {
-    background: transparent;
-    border: none;
-    font-family: var(--font-sans);
-    font-size: 16px;
-    font-weight: 500;
-    color: #6d6d6d;
-    padding: 12px 24px;
-    border-radius: var(--radius-pill);
-    cursor: pointer;
-    transition: var(--transition-smooth);
-    position: relative;
+.hero-grid {
+  display: grid;
+  grid-template-columns: 1.05fr 1fr;
+  gap: 56px;
+  align-items: center;
 }
 
-.tab-btn:hover {
-    color: var(--color-charcoal);
-    background-color: rgba(255, 255, 255, 0.5);
+.hero-kicker {
+  font-size: 0.875rem;
+  font-weight: 500;
+  color: var(--text-secondary);
+  margin-bottom: 16px;
 }
 
-.tab-btn.active {
-    background-color: var(--color-forest-ink);
-    color: var(--color-pure-white);
-    box-shadow: 0 8px 20px rgba(7, 80, 63, 0.2);
+.hero-title {
+  font-family: var(--font-display);
+  font-size: clamp(2.85rem, 5.55vw, 5rem);
+  font-weight: 800;
+  line-height: 0.98;
+  letter-spacing: -0.045em;
+  color: var(--text-primary);
+  margin-bottom: 24px;
 }
 
-/* --- CONTENIDO DE PESTAÑAS (Animación al cambiar) --- */
-.tab-content {
-    display: none;
+.hero-title-accent {
+  color: var(--accent-lime);
+  display: block;
 }
 
-.tab-content.active {
-    display: block;
-    animation: slideUpFade 0.5s cubic-bezier(0.16, 1, 0.3, 1) forwards;
+.hero-subtitle {
+  font-size: 1.125rem;
+  color: var(--text-secondary);
+  max-width: 500px;
+  margin-bottom: 32px;
 }
 
-@keyframes slideUpFade {
-    0% { opacity: 0; transform: translateY(20px); }
-    100% { opacity: 1; transform: translateY(0); }
+.hero-cta-row {
+  display: flex;
+  align-items: center;
+  gap: 20px;
 }
 
-/* --- TÍTULOS EDITORIALES (BMW Style) --- */
-h2 {
-    font-family: var(--font-serif);
-    font-size: 42px;
-    font-weight: 400;
-    color: var(--color-charcoal);
-    margin-bottom: 30px;
-    letter-spacing: -0.5px;
+.hero-secondary-link {
+  font-size: 0.9375rem;
+  font-weight: 500;
+  color: var(--text-secondary);
+  transition: color 160ms;
+}
+.hero-secondary-link:hover { color: var(--text-primary); }
+
+/* Hero Imagen */
+.hero-media-card {
+  position: relative;
+  background-color: var(--bg-surface);
+  border: 1px solid var(--border-subtle);
+  border-radius: var(--radius-card);
+  overflow: hidden;
+  aspect-ratio: 4 / 3;
+  width: 100%;
 }
 
-/* --- TARJETAS (Pastel y blancas) --- */
-.card {
-    background-color: var(--color-pure-white);
-    border-radius: var(--radius-card);
-    padding: 40px;
-    margin-bottom: 30px;
-    border: 1px solid rgba(195, 205, 167, 0.3);
-    transition: var(--transition-smooth);
+.hero-media-img {
+  width: 100%;
+  height: 100%;
+  object-fit: cover;
 }
 
-.card:hover {
-    transform: translateY(-2px);
-    box-shadow: 0 20px 40px rgba(0,0,0,0.04);
+.hero-media-scrim {
+  position: absolute;
+  inset: 0;
+  background: linear-gradient(to top, rgba(8,9,10,0.88) 0%, rgba(8,9,10,0) 100%);
 }
 
-/* --- FORMULARIOS (Inputs tipo píldora) --- */
-label {
-    display: block;
-    font-size: 14px;
-    font-weight: 500;
-    margin-bottom: 10px;
-    color: #353535;
-    letter-spacing: 0.5px;
+.hero-media-caption {
+  position: absolute;
+  left: 20px; right: 20px; bottom: 18px;
+  display: flex;
+  justify-content: space-between;
+  font-size: 0.8125rem;
+  color: var(--text-primary);
 }
 
-input[type="text"],
-input[type="number"],
-select,
-textarea {
-    width: 100%;
-    padding: 16px 24px;
-    border: 1.5px solid var(--color-moss);
-    border-radius: var(--radius-input);
-    font-family: var(--font-sans);
-    font-size: 15px;
-    background-color: var(--color-bone);
-    outline: none;
-    transition: var(--transition-smooth);
-}
+.hero-media-meta { color: var(--text-secondary); font-family: var(--font-mono); font-size: 0.75rem; }
 
-input:focus, select:focus, textarea:focus {
-    border-color: var(--color-forest-ink);
-    background-color: var(--color-pure-white);
-    box-shadow: 0 0 0 4px rgba(7, 80, 63, 0.1);
-}
-
-/* --- BOTONES PÍLDORA (Arva Style) --- */
+/* Botones */
 .btn {
-    background-color: var(--color-forest-ink);
-    color: var(--color-pure-white);
-    border: none;
-    padding: 14px 32px;
-    border-radius: var(--radius-pill);
-    font-family: var(--font-sans);
-    font-weight: 500;
-    font-size: 15px;
-    cursor: pointer;
-    transition: var(--transition-smooth);
-    display: inline-block;
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  min-height: 42px;
+  padding: 10px 20px;
+  border-radius: var(--radius-btn);
+  font-family: var(--font-display);
+  font-size: 0.9375rem;
+  font-weight: 600;
+  cursor: pointer;
+  border: 1px solid transparent;
+  transition: all 160ms;
+  text-decoration: none;
 }
 
-.btn:hover {
-    background-color: var(--color-forest-hover);
-    transform: translateY(-2px);
-    box-shadow: 0 10px 20px rgba(7, 80, 63, 0.2);
+.btn-primary {
+  background-color: var(--accent-lime);
+  color: #08090a;
 }
 
-.btn-danger {
-    background-color: transparent;
-    color: #dc3545;
-    border: 1.5px solid #dc3545;
+.btn-primary:hover {
+  background-color: var(--accent-lime-hover);
 }
 
-.btn-danger:hover {
-    background-color: #dc3545;
-    color: var(--color-pure-white);
-    box-shadow: 0 10px 20px rgba(220, 53, 69, 0.2);
+.btn-outline {
+  background-color: transparent;
+  border-color: var(--border-subtle);
+  color: var(--text-primary);
 }
 
-/* --- TABLAS MINIMALISTAS (BMW Style) --- */
-table {
-    width: 100%;
-    border-collapse: collapse;
-    margin-top: 10px;
+.btn-outline:hover {
+  background-color: var(--bg-surface);
+  border-color: var(--border-focus);
 }
 
-th {
-    text-align: left;
-    padding: 15px 10px;
-    font-weight: 600;
-    font-size: 12px;
-    color: #6d6d6d;
-    border-bottom: 2px solid var(--color-bone);
-    text-transform: uppercase;
-    letter-spacing: 1.5px;
+/* Login Section */
+.auth-section {
+  padding: 80px 0;
+  border-top: 1px solid var(--border-subtle);
+  display: flex;
+  justify-content: center;
 }
 
-td {
-    padding: 24px 10px;
-    border-bottom: 1px solid var(--color-bone);
-    font-size: 15px;
-    transition: var(--transition-smooth);
+.auth-card {
+  background-color: var(--bg-surface);
+  border: 1px solid var(--border-subtle);
+  border-radius: var(--radius-card);
+  padding: 32px;
+  width: 100%;
+  max-width: 440px;
 }
 
-tr:hover td {
-    background-color: var(--color-bone);
+.auth-card-title {
+  font-family: var(--font-display);
+  font-size: 1.5rem;
+  font-weight: 700;
+  margin-bottom: 8px;
 }
 
-/* --- MODALES CON ANIMACIÓN --- */
-.modal-overlay {
-    position: fixed; top: 0; left: 0; width: 100%; height: 100%;
-    background: rgba(7, 80, 63, 0.5); 
-    backdrop-filter: blur(8px);
-    display: flex; justify-content: center; align-items: center;
-    z-index: 2000; opacity: 0; visibility: hidden; transition: var(--transition-smooth);
+.auth-card-desc {
+  font-size: 0.875rem;
+  color: var(--text-secondary);
+  margin-bottom: 24px;
 }
 
-.modal-overlay.show { 
-    opacity: 1; 
-    visibility: visible; 
+.form-field {
+  display: flex;
+  flex-direction: column;
+  gap: 8px;
+  margin-bottom: 18px;
 }
 
-.modal-content {
-    background: var(--color-pure-white); 
-    padding: 40px; 
-    border-radius: 30px;
-    max-width: 450px; width: 90%;
-    text-align: center; 
-    transform: scale(0.9) translateY(20px); 
-    transition: var(--transition-smooth);
+.form-label {
+  font-size: 0.8125rem;
+  font-weight: 500;
+  color: var(--text-secondary);
 }
 
-.modal-overlay.show .modal-content { 
-    transform: scale(1) translateY(0); 
+.form-input {
+  width: 100%;
+  min-height: 44px;
+  padding: 10px 14px;
+  background-color: var(--bg-input);
+  border: 1px solid var(--border-subtle);
+  border-radius: var(--radius-btn);
+  color: var(--text-primary);
+  font-size: 0.9375rem;
 }
 
-.modal-buttons { 
-    margin-top: 30px; 
-    display: flex; 
-    justify-content: center; 
-    gap: 15px; 
+.form-input:focus {
+  outline: none;
+  border-color: var(--accent-lime);
 }
 
-.btn-secondary { 
-    background-color: transparent; 
-    color: #6d6d6d; 
-    border: 1.5px solid #6d6d6d; 
-    padding: 14px 32px; 
-    border-radius: var(--radius-pill); 
-    cursor: pointer; 
-    transition: var(--transition-smooth);
-    font-family: var(--font-sans);
-    font-weight: 500;
-    font-size: 15px;
-}
-
-.btn-secondary:hover {
-    background-color: #f1f1f1;
-}
-
-/* --- TOASTS (Notificaciones flotantes) --- */
-.toast {
-    position: fixed; top: 30px; right: 30px; padding: 18px 30px;
-    border-radius: var(--radius-pill); color: white; font-weight: 500;
-    z-index: 3000; opacity: 0; transform: translateX(50px); transition: var(--transition-smooth);
-    box-shadow: 0 10px 30px rgba(0,0,0,0.15);
-    font-size: 15px;
-}
-
-.toast.show { 
-    opacity: 1; 
-    transform: translateX(0); 
-}
-
-.toast.success { background-color: var(--color-forest-ink); }
-.toast.error { background-color: #dc3545; }
+.btn-full { width: 100%; }

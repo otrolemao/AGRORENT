@@ -3,93 +3,86 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>AgroRent - Iniciar Sesión</title>
-    <link rel="stylesheet" href="styles.css">
-    <style>
-        .login-container {
-            max-width: 400px;
-            margin: 100px auto;
-            background: white;
-            padding: 30px;
-            border-radius: 8px;
-            box-shadow: 0 4px 15px rgba(0,0,0,0.2);
-        }
-        .login-container h2 { text-align: center; color: #2c3e50; }
-        .login-container input {
-            width: 100%;
-            padding: 10px;
-            margin-top: 5px;
-            border: 1px solid #ccc;
-            border-radius: 4px;
-            box-sizing: border-box;
-        }
-        .toast {
-            position: fixed;
-            top: 20px;
-            right: 20px;
-            padding: 15px 25px;
-            border-radius: 8px;
-            color: white;
-            font-weight: bold;
-            box-shadow: 0 4px 12px rgba(0,0,0,0.15);
-            z-index: 1000;
-            opacity: 0;
-            transform: translateY(-20px);
-            transition: opacity 0.3s, transform 0.3s;
-        }
-        .toast.show { opacity: 1; transform: translateY(0); }
-        .toast.success { background-color: #27ae60; }
-        .toast.error { background-color: #e74c3c; }
-    </style>
+    <title>AgroRent — El campo. Digitalizado.</title>
+    <link rel="stylesheet" href="inicio.css">
 </head>
 <body>
+
     <header>
-        <h1>AgroRent</h1>
+        <h1>AgroRent<span>.</span></h1>
+        <div class="header-user">
+            <a href="registro.html" class="btn btn-outline">Crear Cuenta</a>
+        </div>
     </header>
 
-    <div class="login-container">
-        <h2>Iniciar Sesión</h2>
-        <form id="loginForm">
-            <div style="margin-bottom: 15px;">
-                <label>Correo Electrónico:</label>
-                <input type="email" id="email" required>
+    <main>
+        <!-- HERO SECTION -->
+        <section class="hero-section">
+            <div class="container hero-grid">
+                <div class="hero-content">
+                    <p class="hero-kicker">Infraestructura agrícola bajo demanda</p>
+                    <h1 class="hero-title">
+                        El campo. <span class="accent">Digitalizado.</span>
+                    </h1>
+                    <p class="hero-subtitle">
+                        Conectamos directamente a productores agropecuarios con dueños de maquinaria verificada. Reservá tractores, cosechadoras y sembradoras por jornada con tarifas transparentes.
+                    </p>
+                    <div class="hero-cta-row">
+                        <a href="#acceso" class="btn btn-primary">Empezar ahora</a>
+                        <a href="#acceso" class="hero-secondary-link">Ver maquinaria disponible</a>
+                    </div>
+                </div>
+                <div class="hero-media-card">
+                    <!-- Reemplaza esta URL por la ruta a tu imagen local (ej: img/tractor.jpg) -->
+                    <img src="https://images.unsplash.com/photo-1592982537447-6f2a6a0c7c8c?ixlib=rb-4.0.3&auto=format&fit=crop&w=1000&q=80" alt="Tractor agrícola moderno" class="hero-media-img">
+                    <div class="hero-media-scrim"></div>
+                    <div class="hero-media-caption">
+                        <span>Flota activa en campaña</span>
+                        <span class="hero-media-meta">120 HP – 354 HP · Reserva directa</span>
+                    </div>
+                </div>
             </div>
-            <div style="margin-bottom: 15px;">
-                <label>Contraseña:</label>
-                <input type="password" id="password" required>
+        </section>
+
+        <!-- LOGIN SECTION -->
+        <section id="acceso" class="auth-section">
+            <div class="auth-card">
+                <h3 class="auth-card-title">Iniciar Sesión</h3>
+                <p class="auth-card-desc">Ingresá con tu correo y contraseña para acceder al catálogo.</p>
+                
+                <form id="loginForm">
+                    <div class="form-field">
+                        <label class="form-label">Correo electrónico</label>
+                        <input type="email" id="email" class="form-input" placeholder="nombre@campo.com" required>
+                    </div>
+                    
+                    <div class="form-field">
+                        <label class="form-label">Contraseña</label>
+                        <input type="password" id="password" class="form-input" placeholder="••••••••" required>
+                    </div>
+                    
+                    <button type="submit" class="btn btn-primary btn-full">Entrar</button>
+                </form>
+
+                <div class="auth-footer-row">
+                    ¿No tenés cuenta? <a href="registro.html">Registrate aquí</a>
+                </div>
             </div>
-            <button type="submit" class="btn" style="width: 100%;">Entrar</button>
-        </form>
-        
-        <div style="text-align: center; margin-top: 15px;">
-            <p style="font-size: 14px; color: #7f8c8d;">¿No tienes cuenta?</p>
-            <a href="registro.html" style="color: #27ae60; font-weight: bold; text-decoration: none;">Regístrate aquí</a>
-        </div>
-    </div>
+        </section>
+    </main>
 
     <script>
-        // 1. VERIFICAR SESIÓN ACTIVA
         (function redirigirSiHaySesion() {
             try {
                 const guardado = localStorage.getItem('agrorent_usuario');
                 if (!guardado) return;
                 const u = JSON.parse(guardado);
-                
-                // Si la sesión antigua no tiene los IDs necesarios, la borramos para evitar el bucle
-                if (!u.id) {
-                    localStorage.removeItem('agrorent_usuario');
-                    return;
-                }
-
                 if (u.rol === 3) window.location.href = 'panel-admin.html';
                 else if (u.rol === 2) window.location.href = 'panel-proveedor.html';
                 else if (u.rol === 1) window.location.href = 'panel-cliente.html';
-            } catch (e) { 
-                localStorage.removeItem('agrorent_usuario'); 
-            }
+            } catch (e) { }
         })();
 
-        // 2. LÓGICA DE LOGIN
         document.getElementById('loginForm').addEventListener('submit', async (e) => {
             e.preventDefault();
             const email = document.getElementById('email').value;
@@ -105,7 +98,6 @@
                 const data = await respuesta.json();
 
                 if (respuesta.ok) {
-                    // Guardar la sesión CON TODOS LOS DATOS (incluyendo id_proveedor e id_productor)
                     const usuario = {
                         id: data.usuario.id,
                         nombre: data.usuario.nombre,
@@ -114,47 +106,19 @@
                         id_proveedor: data.usuario.id_proveedor,
                         id_productor: data.usuario.id_productor
                     };
-                    
                     localStorage.setItem('agrorent_usuario', JSON.stringify(usuario));
 
-                    mostrarToast('¡Bienvenido ' + usuario.nombre + '!', 'success');
-
-                    setTimeout(() => {
-                        if (usuario.rol === 3) {
-                            window.location.href = 'panel-admin.html';
-                        } else if (usuario.rol === 2) {
-                            window.location.href = 'panel-proveedor.html';
-                        } else {
-                            window.location.href = 'panel-cliente.html';
-                        }
-                    }, 1200);
-
+                    if (usuario.rol === 3) window.location.href = 'panel-admin.html';
+                    else if (usuario.rol === 2) window.location.href = 'panel-proveedor.html';
+                    else window.location.href = 'panel-cliente.html';
                 } else {
-                    mostrarToast(data.error || 'Credenciales incorrectas', 'error');
+                    alert(data.error || 'Credenciales incorrectas');
                 }
             } catch (error) {
                 console.error(error);
-                mostrarToast('Error de conexión con el servidor', 'error');
+                alert('Error de conexión con el servidor');
             }
         });
-
-        // 3. FUNCIÓN TOAST (Mensajes flotantes)
-        function mostrarToast(mensaje, tipo) {
-            const toast = document.createElement('div');
-            toast.className = `toast ${tipo}`;
-            toast.innerText = mensaje;
-            
-            document.body.appendChild(toast);
-            
-            setTimeout(() => {
-                toast.classList.add('show');
-            }, 10);
-
-            setTimeout(() => {
-                toast.classList.remove('show');
-                setTimeout(() => toast.remove(), 300);
-            }, 3000);
-        }
     </script>
 </body>
 </html>
