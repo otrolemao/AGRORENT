@@ -15,6 +15,8 @@ app.use(cors());
 app.use(express.json());
 
 app.use(express.static(path.join(__dirname, '../frontend')));
+// Hacer pública la carpeta de imágenes
+app.use('/uploads', express.static(path.join(__dirname, 'uploads')));
 
 app.use('/api/auth', authRoutes);
 app.use('/api/maquinaria', maquinariaRoutes);
@@ -33,6 +35,21 @@ app.get('/', (req, res) => {
 // Manejador de errores centralizado.
 app.use((err, req, res, next) => {
     console.error(err);
+
+    // Errores de subida (multer): son culpa de la petición, no del servidor.
+    if (err && typeof err.code === 'string' && err.code.startsWith('LIMIT_')) {
+        const mensaje = err.code === 'LIMIT_FILE_SIZE'
+            ? 'La imagen supera el tamaño máximo de 5MB'
+            : err.code === 'LIMIT_UNEXPECTED_FILE'
+                ? 'Campo de archivo no esperado. Usa el campo "foto"'
+                : 'El archivo enviado no es válido';
+        return res.status(400).json({ error: mensaje });
+    }
+
+    if (err && typeof err.message === 'string' && err.message.startsWith('Solo se permiten imágenes')) {
+        return res.status(400).json({ error: err.message });
+    }
+
     res.status(500).json({ error: 'Error interno del servidor' });
 });
 

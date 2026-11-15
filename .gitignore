@@ -25,6 +25,10 @@ Thumbs.db
 *.tmp
 *.bak
 
+# Fotos subidas por los usuarios (se sirven desde backend/uploads)
+backend/uploads/*
+!backend/uploads/.gitkeep
+
 # Build
 dist/
 build/

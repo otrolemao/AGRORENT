@@ -1,10 +1,19 @@
 const db = require('../config/db');
+const fs = require('fs');
 
 const ESTADOS_MAQUINARIA = ['Disponible', 'Rentado', 'Mantenimiento'];
 
 // Límites tomados del esquema de la BD (marca/modelo VARCHAR(50), patente VARCHAR(20))
 const ANIO_MINIMO = 1950;
 const PATENTE_REGEX = /^[A-Za-z]{4}-[0-9]{2,3}$/;
+
+// Multer guarda el archivo ANTES de que el controlador valide los datos. Si la petición
+// se rechaza, borramos la foto para no dejar archivos huérfanos en uploads/.
+const descartarArchivoSubido = (req) => {
+    if (req.file && req.file.path) {
+        fs.unlink(req.file.path, () => {});
+    }
+};
 
 // Valida solo los campos presentes (en las actualizaciones parciales los ausentes se conservan).
 // Devuelve el mensaje de error o null si todo está correcto.
@@ -132,32 +141,41 @@ exports.crearMaquinaria = async (req, res) => {
         const { id_proveedor, id_categoria, marca, modelo, anio, patente, precio_dia, descripcion } = req.body;
 
         if (!id_proveedor || !id_categoria || !marca || !modelo || !precio_dia) {
+            descartarArchivoSubido(req);
             return res.status(400).json({ error: 'Faltan campos obligatorios' });
         }
 
+        // Validaciones de longitud
         const errorValidacion = validarDatosMaquinaria({ marca, modelo, anio, patente, descripcion });
         if (errorValidacion) {
+            descartarArchivoSubido(req);
             return res.status(400).json({ error: errorValidacion });
         }
 
         if (Number(precio_dia) <= 0) {
+            descartarArchivoSubido(req);
             return res.status(400).json({ error: 'El precio por día debe ser mayor a cero' });
         }
 
         const [proveedor] = await db.execute('SELECT id_proveedor FROM proveedor WHERE id_proveedor = ?', [id_proveedor]);
         if (proveedor.length === 0) {
+            descartarArchivoSubido(req);
             return res.status(404).json({ error: 'Proveedor no encontrado' });
         }
 
         const [categoria] = await db.execute('SELECT id_categoria FROM categoria WHERE id_categoria = ?', [id_categoria]);
         if (categoria.length === 0) {
+            descartarArchivoSubido(req);
             return res.status(404).json({ error: 'Categoría no encontrada' });
         }
 
+        // NUEVO: Si multer subió una imagen, guardamos su ruta. Si no, guardamos null
+        const rutaFoto = req.file ? `/uploads/${req.file.filename}` : null;
+
         const query = `
             INSERT INTO maquinaria
-            (id_proveedor, id_categoria, marca, modelo, anio, patente, precio_dia, descripcion, estado)
-            VALUES (?, ?, ?, ?, ?, ?, ?, ?, 'Disponible')
+            (id_proveedor, id_categoria, marca, modelo, anio, patente, precio_dia, descripcion, foto, estado)
+            VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, 'Disponible')
         `;
 
         const [resultado] = await db.execute(query, [
@@ -169,14 +187,17 @@ exports.crearMaquinaria = async (req, res) => {
             patente || null,
             precio_dia,
             descripcion || null,
+            rutaFoto // <-- Aquí se guarda la ruta en la BD
         ]);
 
         res.status(201).json({
             mensaje: 'Maquinaria registrada exitosamente',
             id_maquinaria: resultado.insertId,
+            foto: rutaFoto
         });
     } catch (error) {
         console.error(error);
+        descartarArchivoSubido(req);
         if (error && error.code === 'ER_DUP_ENTRY') {
             return res.status(400).json({ error: 'Ya existe una maquinaria con esa patente' });
         }

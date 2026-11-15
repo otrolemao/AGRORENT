@@ -34,6 +34,7 @@
                 <table id="tablaMaquinaria">
                     <thead>
                         <tr>
+                            <th>Foto</th>
                             <th>Marca</th>
                             <th>Modelo</th>
                             <th>Precio/Día</th>
@@ -115,13 +116,19 @@
                 tbody.innerHTML = ''; 
 
                 if (maquinas.length === 0) {
-                    tbody.innerHTML = '<tr><td colspan="5" style="text-align: center; color: #6d6d6d;">No se encontraron máquinas disponibles.</td></tr>';
+                    tbody.innerHTML = '<tr><td colspan="6" style="text-align: center; color: #6d6d6d;">No se encontraron máquinas disponibles.</td></tr>';
                     return;
                 }
 
                 maquinas.forEach(maquina => {
+                    // Lógica para mostrar la foto o un placeholder
+                    const fotoHTML = maquina.foto 
+                        ? `<img src="${maquina.foto}" alt="${maquina.marca}" style="width: 80px; height: 60px; object-fit: cover; border-radius: 8px;">` 
+                        : `<div style="width: 80px; height: 60px; background: #eee; border-radius: 8px; display: flex; align-items: center; justify-content: center; font-size: 10px; color: #999;">Sin foto</div>`;
+
                     const fila = document.createElement('tr');
                     fila.innerHTML = `
+                        <td>${fotoHTML}</td>
                         <td><strong>${maquina.marca}</strong></td>
                         <td>${maquina.modelo}</td>
                         <td>$${maquina.precio_dia}</td>

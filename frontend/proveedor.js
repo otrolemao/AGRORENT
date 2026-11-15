@@ -32,22 +32,30 @@ document.addEventListener('DOMContentLoaded', () => {
                 return;
             }
             
-            const nuevaMaquina = {
-                id_proveedor: idProveedor,
-                id_categoria: Number(document.getElementById('categoria').value),
-                marca: document.getElementById('marca').value,
-                modelo: document.getElementById('modelo').value,
-                anio: Number(document.getElementById('anio').value),
-                patente: patenteIngresada,
-                precio_dia: Number(document.getElementById('precio_dia').value),
-                descripcion: document.getElementById('descripcion').value
-            };
+            const nuevaMaquina = new FormData();
+            nuevaMaquina.append('id_proveedor', idProveedor);
+            nuevaMaquina.append('id_categoria', document.getElementById('categoria').value);
+            nuevaMaquina.append('marca', document.getElementById('marca').value);
+            nuevaMaquina.append('modelo', document.getElementById('modelo').value);
+            nuevaMaquina.append('anio', document.getElementById('anio').value);
+            nuevaMaquina.append('patente', patenteIngresada);
+            nuevaMaquina.append('precio_dia', document.getElementById('precio_dia').value);
+            nuevaMaquina.append('descripcion', document.getElementById('descripcion').value);
+
+            const archivoFoto = document.getElementById('foto').files[0];
+            if (archivoFoto) {
+                if (archivoFoto.size > 5 * 1024 * 1024) {
+                    mostrarToast('La imagen no puede superar los 5MB', 'error');
+                    return;
+                }
+                nuevaMaquina.append('foto', archivoFoto);
+            }
 
             try {
+                // Sin 'Content-Type': el navegador lo pone solo, incluyendo el boundary del multipart
                 const respuesta = await fetch('/api/maquinaria', {
                     method: 'POST',
-                    headers: { 'Content-Type': 'application/json' },
-                    body: JSON.stringify(nuevaMaquina)
+                    body: nuevaMaquina
                 });
 
                 if (respuesta.ok) {
