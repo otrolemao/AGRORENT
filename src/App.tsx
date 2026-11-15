@@ -105,8 +105,12 @@ export default function App() {
   const [exitoPublicar, setExitoPublicar] = useState<string | null>(null);
   const [reservasRecibidas, setReservasRecibidas] = useState<any[]>([]);
   
-  // Estado para el modal de confirmación de acción
   const [modalAccionReserva, setModalAccionReserva] = useState<{ id: number; estado: string; label: string } | null>(null);
+
+  // Estados para el panel del Admin
+  const [metricas, setMetricas] = useState<any>(null);
+  const [usuarios, setUsuarios] = useState<any[]>([]);
+  const [cargandoAdmin, setCargandoAdmin] = useState(false);
 
   // Estados para el modal de detalles
   const [modalDetalles, setModalDetalles] = useState<Machine | null>(null);
@@ -173,10 +177,37 @@ export default function App() {
     }
   };
 
+  const cargarDatosAdmin = async () => {
+    setCargandoAdmin(true);
+    try {
+      const [respMetricas, respUsuarios] = await Promise.all([
+        fetch('/api/admin/metricas'),
+        fetch('/api/admin/usuarios')
+      ]);
+
+      if (respMetricas.ok) {
+        const data = await respMetricas.json();
+        setMetricas(data);
+      }
+      
+      if (respUsuarios.ok) {
+        const dataU = await respUsuarios.json();
+        setUsuarios(dataU);
+      }
+    } catch (error) {
+      console.error('Error al cargar datos del admin:', error);
+    } finally {
+      setCargandoAdmin(false);
+    }
+  };
+
   useEffect(() => {
     fetchMachines();
     if (sessionUser?.id_productor) {
       cargarMisReservas();
+    }
+    if (sessionUser?.role === 'admin') {
+      cargarDatosAdmin();
     }
   }, [sessionUser]);
 
@@ -372,8 +403,6 @@ export default function App() {
     }
   };
 
-  // --- FUNCIONES DEL PROVEEDOR ---
-
   const handleAgregarFoto = (e: React.ChangeEvent<HTMLInputElement>) => {
     if (e.target.files) {
       const nuevas = Array.from(e.target.files);
@@ -463,6 +492,22 @@ export default function App() {
     }
   };
 
+  const handleSuspenderUsuario = async (idUsuario: number) => {
+    try {
+      const resp = await fetch(`/api/admin/suspender/${idUsuario}`, {
+        method: 'PUT',
+      });
+      if (resp.ok) {
+        alert('Estado del usuario actualizado.');
+        cargarDatosAdmin();
+      } else {
+        alert('Error al actualizar el usuario.');
+      }
+    } catch (error) {
+      console.error(error);
+    }
+  };
+
   return (
     <div className="app-shell">
       <header className="site-header">
@@ -495,10 +540,89 @@ export default function App() {
       </header>
 
       <main className="page-main">
-        {sessionUser?.role === 'propietario' ? (
+        {sessionUser?.role === 'admin' ? (
+          // --- VISTA DEL ADMIN ---
+          <section className="section-block" style={{ paddingTop: 100 }}>
+            <div className="container">
+              <h2 className="section-title" style={{ marginBottom: 40 }}>Panel de Administración</h2>
+              
+              {cargandoAdmin ? (
+                <p style={{ color: 'var(--text-secondary)' }}>Cargando métricas...</p>
+              ) : (
+                <>
+                  <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fit, minmax(200px, 1fr))', gap: 20, marginBottom: 60 }}>
+                    <div style={{ background: 'var(--bg-surface)', padding: 30, borderRadius: 12, border: '1px solid var(--border-subtle)' }}>
+                      <h3 style={{ color: 'var(--text-secondary)', fontSize: 14, textTransform: 'uppercase', marginBottom: 10 }}>Usuarios</h3>
+                      <p style={{ fontSize: 48, fontWeight: 700, color: 'var(--text-primary)' }}>{metricas?.usuarios_registrados || 0}</p>
+                    </div>
+                    <div style={{ background: 'var(--bg-surface)', padding: 30, borderRadius: 12, border: '1px solid var(--border-subtle)' }}>
+                      <h3 style={{ color: 'var(--text-secondary)', fontSize: 14, textTransform: 'uppercase', marginBottom: 10 }}>Máquinas</h3>
+                      <p style={{ fontSize: 48, fontWeight: 700, color: 'var(--text-primary)' }}>{metricas?.maquinaria_registrada || 0}</p>
+                    </div>
+                    <div style={{ background: 'var(--bg-surface)', padding: 30, borderRadius: 12, border: '1px solid var(--border-subtle)' }}>
+                      <h3 style={{ color: 'var(--text-secondary)', fontSize: 14, textTransform: 'uppercase', marginBottom: 10 }}>Reservas</h3>
+                      <p style={{ fontSize: 48, fontWeight: 700, color: 'var(--text-primary)' }}>{metricas?.reservas_activas || 0}</p>
+                    </div>
+                    <div style={{ background: 'var(--bg-surface)', padding: 30, borderRadius: 12, border: '1px solid #e4f222' }}>
+                      <h3 style={{ color: '#e4f222', fontSize: 14, textTransform: 'uppercase', marginBottom: 10 }}>Ingresos</h3>
+                      <p style={{ fontSize: 36, fontWeight: 700, color: '#e4f222' }}>${Number(metricas?.ingresos_estimados || 0).toLocaleString('es-CL')}</p>
+                    </div>
+                  </div>
+
+                  <div className="fleet-card">
+                    <div className="fleet-toolbar">
+                      <h2 className="section-title">Gestión de Usuarios</h2>
+                    </div>
+                    <div className="fleet-table-wrap">
+                      <table className="fleet-table">
+                        <thead>
+                          <tr>
+                            <th>ID</th>
+                            <th>Nombre</th>
+                            <th>Email</th>
+                            <th>Rol</th>
+                            <th>Estado</th>
+                            <th>Acciones</th>
+                          </tr>
+                        </thead>
+                        <tbody>
+                          {usuarios.length === 0 ? (
+                            <tr><td colSpan={6} style={{ textAlign: 'center', padding: 40 }}>No hay usuarios cargados o la ruta /api/admin/usuarios no existe.</td></tr>
+                          ) : (
+                            usuarios.map((u: any) => (
+                              <tr key={u.id_usuario}>
+                                <td>#{u.id_usuario}</td>
+                                <td className="cell-brand">{u.nombre}</td>
+                                <td>{u.email}</td>
+                                <td>
+                                  {u.id_rol === 1 ? 'Productor' : u.id_rol === 2 ? 'Proveedor' : 'Admin'}
+                                </td>
+                                <td style={{ color: u.estado === 1 ? '#e4f222' : '#eb5757' }}>
+                                  {u.estado === 1 ? 'Activo' : 'Suspendido'}
+                                </td>
+                                <td>
+                                  <button 
+                                    className="btn btn-outline" 
+                                    style={{ padding: '6px 12px', fontSize: 12 }}
+                                    onClick={() => handleSuspenderUsuario(u.id_usuario)}
+                                  >
+                                    {u.estado === 1 ? 'Suspender' : 'Reactivar'}
+                                  </button>
+                                </td>
+                              </tr>
+                            ))
+                          )}
+                        </tbody>
+                      </table>
+                    </div>
+                  </div>
+                </>
+              )}
+            </div>
+          </section>
+        ) : sessionUser?.role === 'propietario' ? (
           // --- VISTA DEL PROVEEDOR (JORGE) ---
           <>
-            {/* Hero para el proveedor */}
             <section id="inicio" className="hero-section" style={{ paddingBottom: 40 }}>
               <div className="container hero-grid">
                 <div className="hero-content">
@@ -969,25 +1093,25 @@ export default function App() {
                                   <td className="cell-mono">{formatPrice(Number(machine.precio_dia))}</td>
                                   <td>{machine.descripcion ?? '—'}</td>
                                   <td>
-                                                                    <button
-                                  type="button"
-                                  className="btn btn-outline"
-                                  onClick={() => {
-                                    if (!sessionUser) {
-                                      scrollToAccess('login');
-                                    } else if (sessionUser.role === 'propietario') {
-                                      alert('La edición estará disponible próximamente.');
-                                    } else {
-                                      abrirDetalles(machine);
-                                    }
-                                  }}
-                                >
-                                  {sessionUser?.role === 'propietario'
-                                    ? 'Editar (Próximamente)'
-                                    : sessionUser
-                                      ? 'Ver más detalles'
-                                      : 'Iniciar sesión'}
-                                </button>
+                                    <button
+                                      type="button"
+                                      className="btn btn-outline"
+                                      onClick={() => {
+                                        if (!sessionUser) {
+                                          scrollToAccess('login');
+                                        } else if (sessionUser.role === 'propietario') {
+                                          alert('La edición estará disponible próximamente.');
+                                        } else {
+                                          abrirDetalles(machine);
+                                        }
+                                      }}
+                                    >
+                                      {sessionUser?.role === 'propietario'
+                                        ? 'Editar (Próximamente)'
+                                        : sessionUser
+                                          ? 'Ver más detalles'
+                                          : 'Iniciar sesión'}
+                                    </button>
                                   </td>
                                 </tr>
                               );
