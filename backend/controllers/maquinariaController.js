@@ -6,10 +6,75 @@ const ESTADOS_MAQUINARIA = ['Disponible', 'Rentado', 'Mantenimiento'];
 const ANIO_MINIMO = 1950;
 const PATENTE_REGEX = /^[A-Za-z]{4}-[0-9]{2,3}$/;
 
+// Una máquina puede tener hasta 5 fotos (mismo límite que la subida).
+const MAX_FOTOS = 5;
+
+// __dirname = backend/controllers, así que subimos un nivel hasta backend/uploads
+const CARPETA_UPLOADS = path.join(__dirname, '..', 'uploads');
+
 const descartarArchivosSubidos = (req) => {
     if (req.files && Array.isArray(req.files)) {
         req.files.forEach(f => { if (fs.existsSync(f.path)) fs.unlinkSync(f.path); });
     }
+};
+
+// Devuelve la ruta física solo si el archivo está dentro de uploads/.
+// Evita borrar algo fuera de la carpeta si la ruta viene manipulada.
+const rutaFisicaSegura = (rutaRelativa) => {
+    if (!rutaRelativa) return null;
+    const nombreArchivo = path.basename(String(rutaRelativa));
+    const rutaFisica = path.join(CARPETA_UPLOADS, nombreArchivo);
+    return path.dirname(rutaFisica) === CARPETA_UPLOADS ? rutaFisica : null;
+};
+
+const eliminarArchivoFisico = (rutaRelativa) => {
+    const rutaFisica = rutaFisicaSegura(rutaRelativa);
+    if (rutaFisica && fs.existsSync(rutaFisica)) fs.unlinkSync(rutaFisica);
+};
+
+// Acepta fotosAEliminar de varias formas porque multipart/form-data solo envía texto:
+//   fotosAEliminar=3&fotosAEliminar=7   (campos repetidos)
+//   fotosAEliminar=[3,7]                (JSON)
+//   fotosAEliminar=3,7                  (lista separada por comas)
+//   fotosAEliminar=/uploads/foto.jpg    (ruta, para máquinas antiguas sin fila)
+const parsearFotosAEliminar = (valor) => {
+    if (valor === undefined || valor === null) return [];
+
+    const entradas = Array.isArray(valor) ? valor : [valor];
+    const resultado = [];
+
+    for (const entrada of entradas) {
+        if (entrada === undefined || entrada === null) continue;
+        const texto = String(entrada).trim();
+        if (texto === '') continue;
+
+        if (texto.startsWith('[')) {
+            try {
+                const lista = JSON.parse(texto);
+                if (Array.isArray(lista)) {
+                    lista.forEach(item => {
+                        const itemTexto = String(item).trim();
+                        if (itemTexto !== '') resultado.push(itemTexto);
+                    });
+                    continue;
+                }
+            } catch (error) {
+                // No es JSON válido: se procesa como texto normal
+            }
+        }
+
+        if (texto.includes(',')) {
+            texto.split(',').forEach(item => {
+                const itemTexto = item.trim();
+                if (itemTexto !== '') resultado.push(itemTexto);
+            });
+            continue;
+        }
+
+        resultado.push(texto);
+    }
+
+    return resultado;
 };
 
 const validarDatosMaquinaria = ({ marca, modelo, anio, patente, descripcion }) => {
@@ -212,42 +277,165 @@ exports.crearMaquinaria = async (req, res) => {
 exports.actualizarMaquinaria = async (req, res) => {
     try {
         const { id } = req.params;
-        const { marca, modelo, anio, patente, precio_dia, descripcion, estado } = req.body;
+        const { id_proveedor } = req.query;
+        const { id_categoria, marca, modelo, anio, patente, precio_dia, descripcion, estado } = req.body;
+
+        // Cualquier rechazo debe borrar las fotos nuevas que multer ya escribió en disco
+        const rechazar = (codigo, mensaje) => {
+            descartarArchivosSubidos(req);
+            return res.status(codigo).json({ error: mensaje });
+        };
 
         if (estado && !ESTADOS_MAQUINARIA.includes(estado)) {
-            return res.status(400).json({ error: `Estado inválido. Use: ${ESTADOS_MAQUINARIA.join(', ')}` });
+            return rechazar(400, `Estado inválido. Use: ${ESTADOS_MAQUINARIA.join(', ')}`);
         }
 
         const errorValidacion = validarDatosMaquinaria({ marca, modelo, anio, patente, descripcion });
-        if (errorValidacion) return res.status(400).json({ error: errorValidacion });
+        if (errorValidacion) return rechazar(400, errorValidacion);
 
-        if (precio_dia !== undefined && Number(precio_dia) <= 0) {
-            return res.status(400).json({ error: 'El precio por día debe ser mayor a cero' });
+        if (precio_dia !== undefined && precio_dia !== '' && Number(precio_dia) <= 0) {
+            return rechazar(400, 'El precio por día debe ser mayor a cero');
         }
 
         const [actual] = await db.execute('SELECT * FROM maquinaria WHERE id_maquinaria = ?', [id]);
-        if (actual.length === 0) return res.status(404).json({ error: 'Maquinaria no encontrada' });
+        if (actual.length === 0) return rechazar(404, 'Maquinaria no encontrada');
 
-        const query = `
-            UPDATE maquinaria
-            SET marca = ?, modelo = ?, anio = ?, patente = ?, precio_dia = ?, descripcion = ?, estado = ?
-            WHERE id_maquinaria = ?
-        `;
+        // Seguridad: solo el proveedor dueño puede modificar la máquina
+        if (!id_proveedor) return rechazar(400, 'No se especificó el proveedor');
+        if (Number(actual[0].id_proveedor) !== Number(id_proveedor)) {
+            return rechazar(403, 'Acceso denegado: No puedes editar una máquina que no te pertenece.');
+        }
 
-        await db.execute(query, [
-            marca ?? actual[0].marca,
-            modelo ?? actual[0].modelo,
-            anio ?? actual[0].anio,
-            patente ?? actual[0].patente,
-            precio_dia ?? actual[0].precio_dia,
-            descripcion ?? actual[0].descripcion,
-            estado ?? actual[0].estado,
-            id,
-        ]);
+        if (id_categoria !== undefined && id_categoria !== '') {
+            const [categoria] = await db.execute('SELECT id_categoria FROM categoria WHERE id_categoria = ?', [id_categoria]);
+            if (categoria.length === 0) return rechazar(404, 'Categoría no encontrada');
+        }
 
-        res.status(200).json({ mensaje: 'Maquinaria actualizada exitosamente' });
+        // --- Fotos actuales y cuáles se quieren eliminar ---
+        const [fotosActuales] = await db.execute(
+            'SELECT id_foto, ruta_foto FROM maquinaria_fotos WHERE id_maquinaria = ? ORDER BY id_foto',
+            [id]
+        );
+
+        const solicitadas = parsearFotosAEliminar(req.body.fotosAEliminar);
+        const aBorrar = [];
+        const fotosNoEncontradas = [];
+
+        for (const clave of solicitadas) {
+            let encontrada = null;
+
+            if (/^\d+$/.test(clave)) {
+                encontrada = fotosActuales.find(f => Number(f.id_foto) === Number(clave)) || null;
+            } else {
+                // Ruta: puede venir de una fila de maquinaria_fotos o de la columna foto
+                // de una máquina antigua que nunca tuvo galería.
+                encontrada = fotosActuales.find(f => f.ruta_foto === clave) || null;
+                if (!encontrada && actual[0].foto === clave) {
+                    encontrada = { id_foto: null, ruta_foto: clave };
+                }
+            }
+
+            if (!encontrada) {
+                fotosNoEncontradas.push(clave);
+                continue;
+            }
+            if (!aBorrar.some(f => f.ruta_foto === encontrada.ruta_foto)) {
+                aBorrar.push(encontrada);
+            }
+        }
+
+        const rutasBorradas = new Set(aBorrar.map(f => f.ruta_foto));
+        const nuevasRutas = (req.files || []).map(archivo => `/uploads/${archivo.filename}`);
+
+        const rutasRestantes = fotosActuales
+            .filter(f => !rutasBorradas.has(f.ruta_foto))
+            .map(f => f.ruta_foto);
+
+        if (rutasRestantes.length + nuevasRutas.length > MAX_FOTOS) {
+            return rechazar(400, `Una máquina puede tener como máximo ${MAX_FOTOS} fotos. Actualmente quedarían ${rutasRestantes.length + nuevasRutas.length}.`);
+        }
+
+        // Foto principal: si la actual se eliminó (o no existía), pasa a ser la primera
+        // foto que quede; si no queda ninguna, se limpia para que el catálogo no muestre
+        // la imagen rota de un archivo ya borrado.
+        let fotoPrincipal = actual[0].foto;
+        if (!fotoPrincipal || rutasBorradas.has(fotoPrincipal)) {
+            fotoPrincipal = rutasRestantes[0] || nuevasRutas[0] || null;
+        }
+
+        const nuevoidCategoria = id_categoria === undefined || id_categoria === '' ? actual[0].id_categoria : id_categoria;
+        const nuevaPatente = patente === undefined ? actual[0].patente : (String(patente).trim() || null);
+        const nuevaDescripcion = descripcion === undefined ? actual[0].descripcion : (String(descripcion).trim() || null);
+        const nuevoAnio = anio === undefined || anio === '' ? actual[0].anio : anio;
+
+        // --- Transacción: datos, bajas de fotos y altas de fotos juntos ---
+        const conexion = await db.getConnection();
+        try {
+            await conexion.beginTransaction();
+
+            await conexion.execute(
+                `UPDATE maquinaria
+                 SET id_categoria = ?, marca = ?, modelo = ?, anio = ?, patente = ?,
+                     precio_dia = ?, descripcion = ?, estado = ?, foto = ?
+                 WHERE id_maquinaria = ?`,
+                [
+                    nuevoidCategoria,
+                    marca ?? actual[0].marca,
+                    modelo ?? actual[0].modelo,
+                    nuevoAnio,
+                    nuevaPatente,
+                    precio_dia ?? actual[0].precio_dia,
+                    nuevaDescripcion,
+                    estado ?? actual[0].estado,
+                    fotoPrincipal,
+                    id,
+                ]
+            );
+
+            for (const foto of aBorrar) {
+                if (foto.id_foto === null) continue; // solo existía en la columna foto
+                await conexion.execute(
+                    'DELETE FROM maquinaria_fotos WHERE id_foto = ? AND id_maquinaria = ?',
+                    [foto.id_foto, id]
+                );
+            }
+
+            for (const ruta of nuevasRutas) {
+                await conexion.execute(
+                    'INSERT INTO maquinaria_fotos (id_maquinaria, ruta_foto) VALUES (?, ?)',
+                    [id, ruta]
+                );
+            }
+
+            await conexion.commit();
+        } catch (error) {
+            await conexion.rollback();
+            throw error;
+        } finally {
+            conexion.release();
+        }
+
+        // Los archivos se borran DESPUÉS del commit: si la transacción falla, las fotos
+        // siguen existiendo y no se pierden archivos que la BD todavía referencia.
+        for (const foto of aBorrar) {
+            const [enGaleria] = await db.execute('SELECT COUNT(*) AS total FROM maquinaria_fotos WHERE ruta_foto = ?', [foto.ruta_foto]);
+            const [comoPrincipal] = await db.execute('SELECT COUNT(*) AS total FROM maquinaria WHERE foto = ?', [foto.ruta_foto]);
+            if (enGaleria[0].total === 0 && comoPrincipal[0].total === 0) {
+                eliminarArchivoFisico(foto.ruta_foto);
+            }
+        }
+
+        res.status(200).json({
+            mensaje: 'Maquinaria actualizada exitosamente',
+            foto: fotoPrincipal,
+            fotosEliminadas: aBorrar.map(f => f.ruta_foto),
+            fotosAgregadas: nuevasRutas,
+            fotos: [...rutasRestantes, ...nuevasRutas],
+            fotosNoEncontradas
+        });
     } catch (error) {
         console.error(error);
+        descartarArchivosSubidos(req);
         if (error && error.code === 'ER_DUP_ENTRY') {
             return res.status(400).json({ error: 'Ya existe una maquinaria con esa patente' });
         }
@@ -275,14 +463,8 @@ exports.eliminarMaquinaria = async (req, res) => {
         await db.execute('DELETE FROM maquinaria WHERE id_maquinaria = ?', [id]);
 
         // Borramos también los archivos físicos de uploads/
-        const carpetaUploads = path.join(__dirname, '..', 'uploads');
         for (const { ruta_foto } of fotos) {
-            const nombreArchivo = path.basename(ruta_foto);
-            const rutaFisica = path.join(carpetaUploads, nombreArchivo);
-            // Solo dentro de uploads/: evita borrar cualquier cosa si la ruta viene manipulada
-            if (path.dirname(rutaFisica) === carpetaUploads && fs.existsSync(rutaFisica)) {
-                fs.unlink(rutaFisica, () => {});
-            }
+            eliminarArchivoFisico(ruta_foto);
         }
 
         res.status(200).json({ mensaje: 'Maquinaria eliminada exitosamente' });

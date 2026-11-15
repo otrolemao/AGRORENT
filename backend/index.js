@@ -1,6 +1,7 @@
 const express = require('express');
 const cors = require('cors');
 const path = require('path');
+const fs = require('fs');
 require('dotenv').config();
 
 const db = require('./config/db');
@@ -35,6 +36,11 @@ app.get('/', (req, res) => {
 // Manejador de errores centralizado.
 app.use((err, req, res, next) => {
     console.error(err);
+
+    // Si multer ya había escrito archivos antes de fallar, no los dejamos huérfanos.
+    if (req.files && Array.isArray(req.files)) {
+        req.files.forEach(archivo => { if (archivo.path && fs.existsSync(archivo.path)) fs.unlinkSync(archivo.path); });
+    }
 
     // Errores de subida (multer): son culpa de la petición, no del servidor.
     if (err && typeof err.code === 'string' && err.code.startsWith('LIMIT_')) {
