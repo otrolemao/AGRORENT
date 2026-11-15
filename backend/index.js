@@ -41,7 +41,7 @@ app.use((err, req, res, next) => {
         const mensaje = err.code === 'LIMIT_FILE_SIZE'
             ? 'La imagen supera el tamaño máximo de 5MB'
             : err.code === 'LIMIT_UNEXPECTED_FILE'
-                ? 'Campo de archivo no esperado. Usa el campo "foto"'
+                ? 'Campo de archivo no esperado o demasiados archivos. Usa el campo "fotos" (máximo 5)'
                 : 'El archivo enviado no es válido';
         return res.status(400).json({ error: mensaje });
     }

@@ -95,6 +95,16 @@ CREATE TABLE maquinaria (
 );
 
 -- ============================================
+-- TABLA: maquinaria_fotos (galería de fotos)
+-- ============================================
+CREATE TABLE maquinaria_fotos (
+    id_foto INT AUTO_INCREMENT PRIMARY KEY,
+    id_maquinaria INT NOT NULL,
+    ruta_foto VARCHAR(255) NOT NULL,
+    FOREIGN KEY (id_maquinaria) REFERENCES maquinaria(id_maquinaria) ON DELETE CASCADE
+);
+
+-- ============================================
 -- TABLA: disponibilidad
 -- ============================================
 CREATE TABLE disponibilidad (

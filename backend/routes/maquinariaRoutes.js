@@ -1,13 +1,14 @@
 const express = require('express');
 const router = express.Router();
 const maquinariaController = require('../controllers/maquinariaController');
-const upload = require('../middlewares/uploadMiddleware'); // <-- Importamos multer
+const upload = require('../middlewares/uploadMiddleware');
 
-// A la ruta POST le agregamos el middleware 'upload.single("foto")'
-router.post('/', upload.single('foto'), maquinariaController.crearMaquinaria);
+// CAMBIO: Ahora es 'fotos' (plural) y array
+router.post('/', upload.array('fotos', 5), maquinariaController.crearMaquinaria);
 
 router.get('/buscar', maquinariaController.buscarMaquinaria);
 router.get('/categorias', maquinariaController.listarCategorias);
+router.get('/fotos/:id', maquinariaController.obtenerFotosMaquinaria);
 router.get('/:id', maquinariaController.verDetalleMaquinaria);
 router.put('/:id', maquinariaController.actualizarMaquinaria);
 router.delete('/:id', maquinariaController.eliminarMaquinaria);

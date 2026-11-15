@@ -42,17 +42,22 @@ document.addEventListener('DOMContentLoaded', () => {
             nuevaMaquina.append('precio_dia', document.getElementById('precio_dia').value);
             nuevaMaquina.append('descripcion', document.getElementById('descripcion').value);
 
-            const archivoFoto = document.getElementById('foto').files[0];
-            if (archivoFoto) {
-                if (archivoFoto.size > 5 * 1024 * 1024) {
-                    mostrarToast('La imagen no puede superar los 5MB', 'error');
+            const fotosInput = document.getElementById('fotos');
+            if (fotosInput.files.length > 0) {
+                if (fotosInput.files.length > 5) {
+                    mostrarToast('Solo puedes subir hasta 5 fotos', 'error');
                     return;
                 }
-                nuevaMaquina.append('foto', archivoFoto);
+                for (let i = 0; i < fotosInput.files.length; i++) {
+                    if (fotosInput.files[i].size > 5 * 1024 * 1024) {
+                        mostrarToast('Cada imagen no puede superar los 5MB', 'error');
+                        return;
+                    }
+                    nuevaMaquina.append('fotos', fotosInput.files[i]);
+                }
             }
 
             try {
-                // Sin 'Content-Type': el navegador lo pone solo, incluyendo el boundary del multipart
                 const respuesta = await fetch('/api/maquinaria', {
                     method: 'POST',
                     body: nuevaMaquina
@@ -75,7 +80,6 @@ document.addEventListener('DOMContentLoaded', () => {
 
 async function cargarMaquinaria() {
     try {
-        // Filtramos por el ID del proveedor logueado
         const respuesta = await fetch(`/api/maquinaria/buscar?id_proveedor=${encodeURIComponent(idProveedor)}`);
         const maquinas = await respuesta.json();
         
@@ -152,26 +156,24 @@ async function cargarReservas() {
         reservas.forEach(reserva => {
             let colorEstado = '#212529';
             if (reserva.estado === 'Pendiente') colorEstado = '#f39c12';
-            if (reserva.estado === 'Confirmada') colorEstado = '#07503f'; // Verde oscuro
+            if (reserva.estado === 'Confirmada') colorEstado = '#07503f';
             if (reserva.estado === 'Cancelada' || reserva.estado === 'Rechazada') colorEstado = '#dc3545';
 
-            // Lógica visual para el estado del pago de la seña
             let colorPago = '#212529';
             let textPago = '';
             
             if (reserva.estado_pago === 'Pagado') {
-                colorPago = '#07503f'; // Verde
+                colorPago = '#07503f';
                 textPago = `Seña Pagada ($${Number(reserva.monto_seña).toLocaleString('es-CL')})`;
             } else if (reserva.estado_pago === 'Pendiente') {
-                colorPago = '#f39c12'; // Naranja
+                colorPago = '#f39c12';
                 textPago = `Seña Pendiente`;
             } else if (reserva.estado_pago === 'Reembolsado') {
-                colorPago = '#6d6d6d'; // Gris
+                colorPago = '#6d6d6d';
                 textPago = `Seña Reembolsada ($${Number(reserva.monto_seña).toLocaleString('es-CL')})`;
             }
 
             let botones = '-';
-            // El proveedor SOLO puede aceptar o rechazar si el pago está en estado 'Pagado'
             if (reserva.estado === 'Pendiente' && reserva.estado_pago === 'Pagado') {
                 botones = `
                     <button class="btn-aceptar" onclick="cambiarEstadoReserva(${reserva.id_reserva}, 'Confirmada')">Aceptar</button>
@@ -272,7 +274,6 @@ window.eliminarMaquina = async (id) => {
 
     document.getElementById('btnConfirmarEliminar').onclick = async () => {
         try {
-            // Enviamos el id_proveedor en la URL para la validación de seguridad
             const respuesta = await fetch(`/api/maquinaria/${id}?id_proveedor=${encodeURIComponent(idProveedor)}`, {
                 method: 'DELETE'
             });
@@ -304,7 +305,6 @@ function mostrarToast(mensaje, tipo) {
     const toast = document.createElement('div');
     toast.className = `toast ${tipo}`;
     toast.innerText = mensaje;
-    
     document.body.appendChild(toast);
     
     setTimeout(() => {

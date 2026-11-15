@@ -14,12 +14,14 @@ const storage = multer.diskStorage({
         cb(null, CARPETA_UPLOADS);
     },
     filename: function (req, file, cb) {
-        // Nombre único y seguro: fecha + nombre original limpio (sin rutas ni caracteres raros)
+        // Nombre único y seguro: fecha + sufijo aleatorio (varios archivos del mismo
+        // FormData llegan en el mismo milisegundo) + nombre original limpio.
         const extension = path.extname(file.originalname).toLowerCase();
         const nombreBase = path.basename(file.originalname, path.extname(file.originalname))
             .replace(/[^a-zA-Z0-9_-]/g, '_')
             .slice(0, 40);
-        const nombreUnico = `${Date.now()}-${nombreBase || 'foto'}${extension}`;
+        const sufijo = Math.random().toString(36).slice(2, 8);
+        const nombreUnico = `${Date.now()}-${sufijo}-${nombreBase || 'foto'}${extension}`;
         cb(null, nombreUnico);
     }
 });

@@ -45,7 +45,6 @@
         <div id="tab-publicar" class="tab-content">
             <div class="card" style="max-width: 650px; margin: 0 auto;">
                 <h2>Publicar Nueva Máquina</h2>
-                <!-- IMPORTANTE: enctype="multipart/form-data" permite enviar archivos -->
                 <form id="formMaquinaria" enctype="multipart/form-data">
                     <div style="margin-bottom: 25px;">
                         <label>Marca:</label>
@@ -85,10 +84,9 @@
                         <textarea id="descripcion" rows="4" maxlength="250" placeholder="Detalles de la máquina... (Máx. 250 caracteres)"></textarea>
                     </div>
 
-                    <!-- NUEVO CAMPO PARA LA FOTO -->
                     <div style="margin-bottom: 25px;">
-                        <label>Foto de la máquina:</label>
-                        <input type="file" id="foto" name="foto" accept="image/*" style="padding: 10px; border: 1px solid var(--color-moss); border-radius: 10px; width: 100%;">
+                        <label>Fotos de la máquina (Máx. 5):</label>
+                        <input type="file" id="fotos" name="fotos" accept="image/*" multiple style="padding: 10px; border: 1px solid var(--color-moss); border-radius: 10px; width: 100%;">
                     </div>
 
                     <button type="submit" class="btn" style="width: 100%;">Guardar Máquina</button>
@@ -141,6 +139,6 @@
             evt.currentTarget.classList.add("active");
         }
     </script>
-    <script src="proveedor.js"></script>
+    <script src="proveedor.js?v=3"></script>
 </body>
 </html>
