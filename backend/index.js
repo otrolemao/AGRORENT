@@ -15,7 +15,9 @@ const app = express();
 app.use(cors());
 app.use(express.json());
 
-app.use(express.static(path.join(__dirname, '../frontend')));
+// El frontend activo es la app de React (server.ts en la raíz). Esta carpeta es el
+// respaldo del frontend HTML original, que se mantiene servible desde este servidor.
+app.use(express.static(path.join(__dirname, '../_backup_html_frontend')));
 // Hacer pública la carpeta de imágenes
 app.use('/uploads', express.static(path.join(__dirname, 'uploads')));
 
@@ -30,7 +32,7 @@ app.use('/api', (req, res) => {
 });
 
 app.get('/', (req, res) => {
-    res.sendFile(path.join(__dirname, '../frontend/index.html'));
+    res.sendFile(path.join(__dirname, '../_backup_html_frontend/index.html'));
 });
 
 // Manejador de errores centralizado.

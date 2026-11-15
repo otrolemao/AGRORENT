@@ -108,8 +108,11 @@ exports.buscarMaquinaria = async (req, res) => {
     try {
         const { busqueda, id_proveedor, estado } = req.query;
         let query = `
-            SELECT m.id_maquinaria, m.id_proveedor, m.id_categoria, m.marca, m.modelo, m.anio, m.patente, m.descripcion, m.precio_dia, m.foto, m.estado
+            SELECT m.id_maquinaria, m.id_proveedor, m.id_categoria, m.marca, m.modelo, m.anio, m.patente,
+                   m.descripcion, m.precio_dia, m.foto, m.estado, m.fecha_registro,
+                   c.nombre AS categoria
             FROM maquinaria m
+            LEFT JOIN categoria c ON c.id_categoria = m.id_categoria
         `;
         const condiciones = [];
         const params = [];
