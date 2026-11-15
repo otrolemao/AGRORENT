@@ -969,23 +969,25 @@ export default function App() {
                                   <td className="cell-mono">{formatPrice(Number(machine.precio_dia))}</td>
                                   <td>{machine.descripcion ?? '—'}</td>
                                   <td>
-                                    <button
-                                      type="button"
-                                      className="btn btn-outline"
-                                      onClick={() => {
-                                        if (sessionUser?.role === 'propietario') {
-                                          alert('La edición estará disponible próximamente.');
-                                        } else {
-                                          abrirDetalles(machine);
-                                        }
-                                      }}
-                                    >
-                                      {sessionUser?.role === 'propietario'
-                                        ? 'Editar (Próximamente)'
-                                        : sessionUser
-                                          ? 'Ver más detalles'
-                                          : 'Iniciar sesión'}
-                                    </button>
+                                                                    <button
+                                  type="button"
+                                  className="btn btn-outline"
+                                  onClick={() => {
+                                    if (!sessionUser) {
+                                      scrollToAccess('login');
+                                    } else if (sessionUser.role === 'propietario') {
+                                      alert('La edición estará disponible próximamente.');
+                                    } else {
+                                      abrirDetalles(machine);
+                                    }
+                                  }}
+                                >
+                                  {sessionUser?.role === 'propietario'
+                                    ? 'Editar (Próximamente)'
+                                    : sessionUser
+                                      ? 'Ver más detalles'
+                                      : 'Iniciar sesión'}
+                                </button>
                                   </td>
                                 </tr>
                               );
