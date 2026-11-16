@@ -230,8 +230,8 @@ export default function App() {
     setAuthError(null);
     setAuthSuccess(null);
 
-    if (authMode === 'register' && name.trim().length < 2) {
-      setAuthError('Ingresá tu nombre completo para crear la cuenta.');
+    if (authMode === 'register' && !RUT_REGEX.test(rut.trim())) {
+      setAuthError('Ingresá un RUT válido (Ej: 12.345.678-9).');
       return;
     }
     if (!email.trim() || !email.includes('@')) {
@@ -1176,12 +1176,6 @@ export default function App() {
                           <span className="session-key">Rol</span>
                           <span className="session-val">{sessionRole}</span>
                         </div>
-                        <div className="session-row">
-                          <span className="session-key">Token</span>
-                          <span className="session-val">
-                            {sessionToken ? `${sessionToken.slice(0, 18)}...` : '—'}
-                          </span>
-                        </div>
                       </div>
 
                       <a href="#flota" className="btn btn-primary btn-full">Ir al catálogo de maquinaria</a>
@@ -1213,6 +1207,7 @@ export default function App() {
                                 placeholder="María González"
                                 value={name}
                                 onChange={(e) => setName(e.target.value)}
+                                maxLength={100}
                                 required
                               />
                             </div>
@@ -1240,6 +1235,7 @@ export default function App() {
                                 value={rut}
                                 onChange={(e) => setRut(e.target.value)}
                                 autoComplete="off"
+                                pattern="[0-9]{1,2}\.?[0-9]{3}\.?[0-9]{3}-?[0-9kK]"
                                 required
                               />
                             </div>
