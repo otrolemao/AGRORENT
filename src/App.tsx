@@ -48,7 +48,52 @@ const formatPrice = (amount: number) =>
     maximumFractionDigits: 0,
   }).format(amount);
 
-const RUT_REGEX = /^[0-9]{1,2}\.?[0-9]{3}\.?[0-9]{3}-?[0-9kK]$/;
+// Formatea el RUT mientras el usuario escribe
+const formatearRut = (valor: string): string => {
+  const limpio = valor.replace(/[^0-9kK]/g, '').toUpperCase();
+  if (limpio === '') return '';
+  if (limpio.length === 1) return limpio;
+  const cuerpo = limpio.slice(0, -1);
+  const dv = limpio.slice(-1);
+  const cuerpoConPuntos = cuerpo.replace(/\B(?=(\d{3})+(?!\d))/g, '.');
+  return `${cuerpoConPuntos}-${dv}`;
+};
+
+// Valida que el dígito verificador sea correcto (algoritmo módulo 11 oficial)
+const validarRut = (rut: string): boolean => {
+  const limpio = rut.replace(/[^0-9kK]/g, '').toUpperCase();
+  if (limpio.length < 2) return false;
+
+  const cuerpo = limpio.slice(0, -1);
+  const dvIngresado = limpio.slice(-1);
+
+  // Rechazar RUTs ficticios (todos los dígitos iguales)
+  if (/^(\d)\1+$/.test(cuerpo)) {
+    return false;
+  }
+
+  let suma = 0;
+  let multiplicador = 2;
+
+  for (let i = cuerpo.length - 1; i >= 0; i--) {
+    suma += parseInt(cuerpo[i], 10) * multiplicador;
+    multiplicador = multiplicador === 7 ? 2 : multiplicador + 1;
+  }
+
+  const resto = suma % 11;
+  const dvCalculado = 11 - resto;
+
+  let dvEsperado = '';
+  if (dvCalculado === 11) {
+    dvEsperado = '0';
+  } else if (dvCalculado === 10) {
+    dvEsperado = 'K';
+  } else {
+    dvEsperado = String(dvCalculado);
+  }
+
+  return dvEsperado === dvIngresado;
+};
 
 export default function App() {
   const [authMode, setAuthMode] = useState<'login' | 'register'>('login');
@@ -86,7 +131,7 @@ export default function App() {
   const [searchQuery, setSearchQuery] = useState('');
   const [activeTab, setActiveTab] = useState<'catalogo' | 'reservas'>('catalogo');
   const [selectedMachine, setSelectedMachine] = useState<Machine | null>(null);
-  
+
   const [reservations, setReservations] = useState<Reservation[]>([]);
   const [reservasReales, setReservasReales] = useState<any[]>([]);
 
@@ -104,7 +149,7 @@ export default function App() {
   const [errorPublicar, setErrorPublicar] = useState<string | null>(null);
   const [exitoPublicar, setExitoPublicar] = useState<string | null>(null);
   const [reservasRecibidas, setReservasRecibidas] = useState<any[]>([]);
-  
+
   const [modalAccionReserva, setModalAccionReserva] = useState<{ id: number; estado: string; label: string } | null>(null);
 
   // Estados para el panel del Admin
@@ -189,7 +234,7 @@ export default function App() {
         const data = await respMetricas.json();
         setMetricas(data);
       }
-      
+
       if (respUsuarios.ok) {
         const dataU = await respUsuarios.json();
         setUsuarios(dataU);
@@ -230,20 +275,35 @@ export default function App() {
     setAuthError(null);
     setAuthSuccess(null);
 
-    if (authMode === 'register' && !RUT_REGEX.test(rut.trim())) {
-      setAuthError('Ingresá un RUT válido (Ej: 12.345.678-9).');
+    // 1. Validar Nombre (Solo si es registro)
+    if (authMode === 'register') {
+      if (name.trim().length < 3) {
+        setAuthError('El nombre debe tener al menos 3 caracteres.');
+        return;
+      }
+      
+      const nombreRegex = /^[a-zA-ZáéíóúÁÉÍÓÚñÑüÜ\s-]+$/;
+      if (!nombreRegex.test(name.trim())) {
+        setAuthError('El nombre solo puede contener letras y espacios. No se permiten números ni símbolos.');
+        return;
+      }
+    }
+
+    // 2. Validar RUT (Solo si es registro)
+    if (authMode === 'register' && !validarRut(rut)) {
+      setAuthError('RUT inválido: revisá el dígito verificador (Ej: 20.123.456-7).');
       return;
     }
+
+    // 3. Validar Correo
     if (!email.trim() || !email.includes('@')) {
       setAuthError('Ingresá un correo electrónico válido.');
       return;
     }
+
+    // 4. Validar Contraseña
     if (password.length < 6) {
       setAuthError('La contraseña debe tener al menos 6 caracteres.');
-      return;
-    }
-    if (authMode === 'register' && !RUT_REGEX.test(rut.trim())) {
-      setAuthError('Ingresá un RUT válido (Ej: 12.345.678-9).');
       return;
     }
 
@@ -545,7 +605,7 @@ export default function App() {
           <section className="section-block" style={{ paddingTop: 100 }}>
             <div className="container">
               <h2 className="section-title" style={{ marginBottom: 40 }}>Panel de Administración</h2>
-              
+
               {cargandoAdmin ? (
                 <p style={{ color: 'var(--text-secondary)' }}>Cargando métricas...</p>
               ) : (
@@ -601,8 +661,8 @@ export default function App() {
                                   {u.estado === 1 ? 'Activo' : 'Suspendido'}
                                 </td>
                                 <td>
-                                  <button 
-                                    className="btn btn-outline" 
+                                  <button
+                                    className="btn btn-outline"
                                     style={{ padding: '6px 12px', fontSize: 12 }}
                                     onClick={() => handleSuspenderUsuario(u.id_usuario)}
                                   >
@@ -996,8 +1056,8 @@ export default function App() {
                                   <td style={{ color: colorEstado, fontWeight: 600 }}>{res.estado}</td>
                                   <td>
                                     {res.estado === 'Confirmada' && (
-                                      <button 
-                                        className="btn btn-outline" 
+                                      <button
+                                        className="btn btn-outline"
                                         style={{ fontSize: 12, padding: '6px 12px' }}
                                         onClick={() => alert('La valoración estará disponible próximamente.')}
                                       >
@@ -1207,7 +1267,7 @@ export default function App() {
                                 placeholder="María González"
                                 value={name}
                                 onChange={(e) => setName(e.target.value)}
-                                maxLength={100}
+                                maxLength={50}
                                 required
                               />
                             </div>
@@ -1233,9 +1293,9 @@ export default function App() {
                                 className="form-input"
                                 placeholder="12.345.678-9"
                                 value={rut}
-                                onChange={(e) => setRut(e.target.value)}
+                                onChange={(e) => setRut(formatearRut(e.target.value))}
+                                maxLength={12}
                                 autoComplete="off"
-                                pattern="[0-9]{1,2}\.?[0-9]{3}\.?[0-9]{3}-?[0-9kK]"
                                 required
                               />
                             </div>
@@ -1346,7 +1406,7 @@ export default function App() {
               </h3>
               <button className="btn btn-outline" onClick={cerrarDetalles}>Cerrar</button>
             </div>
-            
+
             <div style={{ display: 'grid', gridTemplateColumns: '1.2fr 1fr', gap: 24 }}>
               <div>
                 <div style={{ width: '100%', height: 300, background: '#0f1011', borderRadius: 12, overflow: 'hidden', marginBottom: 20, position: 'relative' }}>
@@ -1355,13 +1415,13 @@ export default function App() {
                       <img src={fotosDetalles[indiceFoto].ruta_foto} alt="Máquina" style={{ width: '100%', height: '100%', objectFit: 'cover' }} />
                       {fotosDetalles.length > 1 && (
                         <>
-                          <button 
+                          <button
                             onClick={() => setIndiceFoto((prev) => (prev - 1 + fotosDetalles.length) % fotosDetalles.length)}
                             style={{ position: 'absolute', left: 10, top: '50%', transform: 'translateY(-50%)', background: 'rgba(0,0,0,0.5)', color: 'white', border: 'none', padding: '10px', cursor: 'pointer', borderRadius: '50%' }}
                           >
                             &lsaquo;
                           </button>
-                          <button 
+                          <button
                             onClick={() => setIndiceFoto((prev) => (prev + 1) % fotosDetalles.length)}
                             style={{ position: 'absolute', right: 10, top: '50%', transform: 'translateY(-50%)', background: 'rgba(0,0,0,0.5)', color: 'white', border: 'none', padding: '10px', cursor: 'pointer', borderRadius: '50%' }}
                           >
@@ -1374,7 +1434,7 @@ export default function App() {
                     <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'center', height: '100%', color: '#707580' }}>Sin fotos</div>
                   )}
                 </div>
-                
+
                 <p style={{ color: 'var(--text-secondary)', marginBottom: 20, fontSize: 15 }}>
                   {modalDetalles.descripcion || 'Sin descripción.'}
                 </p>
@@ -1382,7 +1442,7 @@ export default function App() {
 
               <div style={{ background: 'rgba(255,255,255,0.02)', padding: 24, borderRadius: 12, border: '1px solid var(--border-subtle)' }}>
                 <h4 style={{ fontFamily: 'var(--font-display)', fontSize: 20, marginBottom: 16, color: 'var(--text-primary)' }}>Ficha Técnica</h4>
-                
+
                 <div style={{ display: 'flex', flexDirection: 'column', gap: 12, marginBottom: 24 }}>
                   <div style={{ display: 'flex', justifyContent: 'space-between', borderBottom: '1px solid var(--border-subtle)', paddingBottom: 8 }}>
                     <span style={{ color: 'var(--text-secondary)' }}>Categoría</span>
@@ -1406,8 +1466,8 @@ export default function App() {
                   ${Number(modalDetalles.precio_dia).toLocaleString('es-CL')} <span style={{ fontSize: 16, color: 'var(--text-secondary)', fontWeight: 400 }}>/ día</span>
                 </div>
 
-                <button 
-                  className="btn btn-primary btn-full" 
+                <button
+                  className="btn btn-primary btn-full"
                   onClick={() => {
                     cerrarDetalles();
                     abrirModalReserva(modalDetalles);
@@ -1435,30 +1495,30 @@ export default function App() {
             <div style={{ display: 'flex', flexDirection: 'column', gap: 16, marginBottom: 24 }}>
               <div>
                 <label className="form-label">Fecha de inicio</label>
-                <input 
-                  type="date" 
-                  className="form-input" 
+                <input
+                  type="date"
+                  className="form-input"
                   style={{ colorScheme: 'dark' }}
-                  value={fechaInicio} 
-                  onChange={(e) => setFechaInicio(e.target.value)} 
+                  value={fechaInicio}
+                  onChange={(e) => setFechaInicio(e.target.value)}
                 />
               </div>
               <div>
                 <label className="form-label">Fecha de término</label>
-                <input 
-                  type="date" 
-                  className="form-input" 
+                <input
+                  type="date"
+                  className="form-input"
                   style={{ colorScheme: 'dark' }}
-                  value={fechaFin} 
-                  onChange={(e) => setFechaFin(e.target.value)} 
+                  value={fechaFin}
+                  onChange={(e) => setFechaFin(e.target.value)}
                 />
               </div>
             </div>
 
             <div style={{ display: 'flex', alignItems: 'flex-start', gap: 10, marginBottom: 24 }}>
-              <input 
-                type="checkbox" 
-                id="aceptoTerminos" 
+              <input
+                type="checkbox"
+                id="aceptoTerminos"
                 checked={aceptoTerminos}
                 onChange={(e) => setAceptoTerminos(e.target.checked)}
                 style={{ width: 18, height: 18, marginTop: 3, cursor: 'pointer' }}
@@ -1476,9 +1536,9 @@ export default function App() {
 
             <div style={{ display: 'flex', gap: 12, justifyContent: 'flex-end' }}>
               <button className="btn btn-outline" onClick={cerrarModalReserva}>Cancelar</button>
-              <button 
-                className="btn btn-primary" 
-                onClick={confirmarReserva} 
+              <button
+                className="btn btn-primary"
+                onClick={confirmarReserva}
                 disabled={reservaLoading || !aceptoTerminos}
                 style={{ opacity: aceptoTerminos ? 1 : 0.5, cursor: aceptoTerminos ? 'pointer' : 'not-allowed' }}
               >
