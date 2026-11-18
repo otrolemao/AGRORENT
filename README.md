@@ -204,7 +204,7 @@ Todos usan la contraseña **`agrorent123`**. Los hashes están guardados con bcr
 | `maria@productor.cl` | Productor | `id_productor = 1` |
 | `pedro@productor.cl` | Productor | `id_productor = 2` |
 
-> Los RUT de estos usuarios de ejemplo (`11.111.111-1`, `22.222.222-2`, etc.) fueron cargados directamente por el script y **no superan la validación de módulo 11** del formulario de registro. Sirven para iniciar sesión, no para volver a registrarlos.
+> Los RUT de estos usuarios de ejemplo (`11.111.111-1`, `22.222.222-2`, etc.) fueron cargados directamente por el script. **El formulario de registro los rechaza** porque, aunque su dígito verificador calza con el módulo 11, el frontend bloquea los RUT con todos los dígitos del cuerpo iguales (regla anti-ficticios). Sirven para iniciar sesión, no para volver a registrarlos.
 
 ### Datos de prueba adicionales
 
