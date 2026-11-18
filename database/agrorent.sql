@@ -205,11 +205,13 @@ CREATE TABLE valoracion (
 -- ============================================
 CREATE TABLE reporte (
     id_reporte INT AUTO_INCREMENT PRIMARY KEY,
+    id_usuario INT NOT NULL,
     tipo VARCHAR(50) NOT NULL,
     fecha_inicio DATE,
     fecha_fin DATE,
     datos JSON,
-    fecha_creacion DATETIME DEFAULT CURRENT_TIMESTAMP
+    fecha_creacion DATETIME DEFAULT CURRENT_TIMESTAMP,
+    FOREIGN KEY (id_usuario) REFERENCES usuario(id_usuario) ON DELETE CASCADE
 );
 
 -- ============================================
